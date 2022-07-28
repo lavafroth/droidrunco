@@ -4,14 +4,24 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"sort"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/jroimartin/gocui"
 	adb "github.com/zach-klippenstein/goadb"
 )
+
+const aapt string = "/data/local/tmp/aapt"
+
+var searchQuery string
+var listing, searchBox *gocui.View
+var device *adb.Device
+var aaptPath string
+var pkgs map[App]bool
+var client *adb.Adb
+var selection int
 
 type App struct {
 	Package string
@@ -39,29 +49,22 @@ func (apps Apps) Swap(i, j int) {
 	apps[i], apps[j] = apps[j], apps[i]
 }
 
-var searchQuery string
-var listing, searchBox *gocui.View
-var device *adb.Device
-var aaptPath string
-var pkgs map[App]bool
-var client *adb.Adb
-var selection int
-
-func push(local, remote string) {
+func push(local, remote string) error {
 	localHandle, err := os.Open(local)
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("failed to open local file %s: %q", local, err)
+	}
 	defer localHandle.Close()
 	remoteHandle, err := device.OpenWrite(remote, 0o755, time.Now())
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("failed to open handle with write permissions on file %s: %q", remote, err)
+	}
 	defer remoteHandle.Close()
 	_, err = io.Copy(remoteHandle, localHandle)
-	checkErr(err)
-}
-
-func checkErr(err error) {
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to copy data from local file handle to remote file: %q", err)
 	}
+	return nil
 }
 
 func main() {
@@ -71,7 +74,7 @@ func main() {
 		Port: 6000,
 	})
 	if err != nil {
-		log.Fatalf("failed to start adb server: %q",err)
+		log.Fatalf("failed to start adb server: %q", err)
 	}
 	client.StartServer()
 	defer client.KillServer()
@@ -79,23 +82,25 @@ func main() {
 
 	binary := "aapt-x86-pie"
 	out, err := device.RunCommand("getprop ro.product.cpu.abi")
-	checkErr(err)
+	if err != nil {
+		log.Fatalf("failed to retrieve device architecture: %q, is the device connected?", err)
+	}
 
 	if strings.Contains(out, "arm") {
 		binary = "aapt-arm-pie"
 	}
 
-	remotePath := "/data/local/tmp/"
-	aaptPath = remotePath + binary
-	push(binary, aaptPath)
-
+	if err := push(binary, aapt); err != nil {
+		log.Fatal(err)
+	}
 	time.Sleep(1 * time.Second)
-
-	out, err = device.RunCommand(aaptPath)
-	checkErr(err)
+	out, err = device.RunCommand(aapt)
+	if err != nil {
+		log.Fatal("failed to execute aapt: %q", err)
+	}
 
 	if strings.Contains(out, "not executable") {
-		log.Fatal("Failed to execute aapt")
+		log.Fatal("Failed to execute aapt: %q", out)
 	}
 
 	go func() {
@@ -105,21 +110,26 @@ func main() {
 	}()
 
 	g, err := gocui.NewGui(gocui.Output256)
-	checkErr(err)
+	if err != nil {
+		log.Fatal("failed to create new console ui: %q", err)
+	}
 	defer g.Close()
 
 	g.SetManagerFunc(layout)
-	checkErr(g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit))
+	err = g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
+	if err != nil {
+		log.Fatal(`failed to set "quit" keybind as ctrl + c: %q`, err)
+	}
 
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
+		log.Fatal(err)
 	}
 }
 
 func updateCache() error {
 	out, err := device.RunCommand("pm list packages -f")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
 	refreshedPkgs := make(map[App]bool)
@@ -128,10 +138,9 @@ func updateCache() error {
 		delim := strings.LastIndex(pkg, "=")
 		app := App{Package: pkg[delim+1:]}
 		if len(pkgs) != 0 {
-			command := aaptPath + " d badging " + pkg[:delim]
-			out, err := device.RunCommand(command)
+			out, err = device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, pkg[:delim]))
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to refresh package list: %q", err)
 			}
 
 			for _, line := range strings.Split(out, "\n") {
@@ -142,20 +151,20 @@ func updateCache() error {
 			}
 		}
 		refreshedPkgs[app] = true
-
 	}
 	pkgs = refreshedPkgs
 	return nil
 }
 
 func uninstallApp(app App) {
-	command := fmt.Sprintf("pm uninstall --user 0 %s", app.Package)
-	out, err := device.RunCommand(command)
-	checkErr(err)
-	if strings.Contains(out, "Success") {
-		// Remove the app from the set
-		pkgs[app] = false
+	out, err := device.RunCommand(fmt.Sprintf("pm uninstall --user 0 %s", app.Package))
+	if err != nil {
+		log.Fatalf("failed to run uninstall command on %s: %q", app.String(), err)
 	}
+	if !strings.Contains(out, "Success") {
+		log.Fatalf("failed to uninstall %s", app.String())
+	}
+	pkgs[app] = false
 }
 
 func search(query string) Apps {
@@ -174,16 +183,10 @@ func search(query string) Apps {
 }
 
 func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
-flushed := false
-result := []App{}
-flush := func() {
-	listing.Clear()
-	result = search(v.Buffer())
-}
-
 	switch {
 	case ch != 0 && mod == 0:
 		v.EditWrite(ch)
+		selection = 0
 	case key == gocui.KeySpace:
 		v.EditWrite(' ')
 	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2:
@@ -196,10 +199,6 @@ flush := func() {
 		v.EditDelete(false)
 	case key == gocui.KeyInsert:
 		v.Overwrite = !v.Overwrite
-	case key == gocui.KeyEnter:
-		flush()
-		flushed = true
-		uninstallApp(result[selection])
 	case key == gocui.KeyArrowLeft:
 		v.MoveCursor(-1, 0, false)
 	case key == gocui.KeyArrowRight:
@@ -207,37 +206,40 @@ flush := func() {
 	case key == gocui.KeyArrowDown:
 		selection++
 	case key == gocui.KeyArrowUp:
-		if selection > 0 {
-			selection--
+		selection--
+	}
+	listing.Clear()
+	apps := search(v.Buffer())
+	if key == gocui.KeyEnter {
+		uninstallApp(apps[selection])
+		return
+	}
+	appCount := len(apps) - 1
+	if selection > appCount {
+		selection = appCount
+	}
+	if selection < 0 {
+		selection = 0
+	}
+	listing.SetOrigin(0, selection)
+	for i, app := range apps {
+		if i == selection {
+			fmt.Fprintf(listing, "\x1b[38;5;45m%s\x1b[0m\n", app.String())
+			continue
 		}
-	}
-	if !flushed {
-		flush()
-	}
-	if selection >= len(result) {
-		selection = len(result) - 1
-	}
-	for idx, entry := range result {
-		if idx == selection {
-			fmt.Fprintf(listing, "\x1b[38;5;45m%s\x1b[0m\n", entry.String())
-		} else {
-			fmt.Fprintln(listing, entry.String())
-		}
+		fmt.Fprintln(listing, app.String())
 	}
 }
 
 func layout(g *gocui.Gui) error {
 	var err error
-	maxX, maxY := g.Size()
-	if listing, err = g.SetView("listing", 0, 3, maxX-1, maxY-1); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
+	X, Y := g.Size()
+	if listing, err = g.SetView("listing", 0, 3, X-1, Y-1); err != nil && err != gocui.ErrUnknownView {
+		return err
 	}
-	if searchBox, err = g.SetView("searchBox", 0, 0, maxX-1, 2); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
+	listing.Wrap = true
+	if searchBox, err = g.SetView("searchBox", 0, 0, X-1, 2); err != nil && err != gocui.ErrUnknownView {
+		return err
 	}
 	searchBox.Title = " Search app / package "
 	searchBox.Editor = gocui.EditorFunc(customEditor)
@@ -245,7 +247,7 @@ func layout(g *gocui.Gui) error {
 	searchBox.Wrap = true
 	searchBox.Autoscroll = true
 
-	if _, err := g.SetCurrentView("searchBox"); err != nil {
+	if _, err = g.SetCurrentView("searchBox"); err != nil {
 		return err
 	}
 	return nil
