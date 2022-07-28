@@ -102,6 +102,10 @@ func main() {
 		log.Fatal("Failed to execute aapt: %q", out)
 	}
 
+	log.Println("Initializing package entries ...")
+	updateCache()
+	log.Println("Done.")
+
 	go func() {
 		for {
 			// TODO: actually handle the error
@@ -137,17 +141,14 @@ func updateCache() error {
 		pkg = strings.Split(pkg, ":")[1]
 		delim := strings.LastIndex(pkg, "=")
 		app := App{Package: pkg[delim+1:]}
-		if len(pkgs) != 0 {
-			out, err = device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, pkg[:delim]))
-			if err != nil {
-				return fmt.Errorf("failed to refresh package list: %q", err)
-			}
-
-			for _, line := range strings.Split(out, "\n") {
-				if strings.Contains(line, "application-label") {
-					app.Name = line[19 : len(line)-1]
-					break
-				}
+		out, err = device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, pkg[:delim]))
+		if err != nil {
+			return fmt.Errorf("failed to refresh package list: %q", err)
+		}
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "application-label") {
+				app.Name = line[19 : len(line)-1]
+				break
 			}
 		}
 		refreshedPkgs[app] = true
