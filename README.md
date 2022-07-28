@@ -24,4 +24,4 @@ go run .
 * Use the up / down arrow keys to select a package.
 * Hit enter to wipe it off the face of your device.
 
-[![asciicast](https://asciinema.org/a/ey2gCeFxiZKCmCcJuBx76m4yl.svg)](https://asciinema.org/a/ey2gCeFxiZKCmCcJuBx76m4yl)
+[![asciicast](https://asciinema.org/a/511427.svg)](https://asciinema.org/a/511427)
