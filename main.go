@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 	"os"
 	"strings"
 	"time"
@@ -17,18 +18,32 @@ type App struct {
 	Name    string
 }
 
+type Apps []App
+
 func (app *App) String() string {
 	if len(app.Name) > 0 {
 		return fmt.Sprintf("%s (%s)", app.Name, app.Package)
 	}
-	return fmt.Sprintf("%s", app.Package)
+	return app.Package
+}
+
+func (apps Apps) Len() int {
+	return len(apps)
+}
+
+func (apps Apps) Less(i, j int) bool {
+	return strings.Compare(apps[i].String(), apps[j].String()) < 0
+}
+
+func (apps Apps) Swap(i, j int) {
+	apps[i], apps[j] = apps[j], apps[i]
 }
 
 var searchQuery string
 var listing, searchBox *gocui.View
 var device *adb.Device
 var aaptPath string
-var pkgs []App
+var pkgs map[App]bool
 var client *adb.Adb
 var selection int
 
@@ -50,12 +65,13 @@ func checkErr(err error) {
 }
 
 func main() {
+	pkgs = make(map[App]bool)
 	var err error
 	client, err = adb.NewWithConfig(adb.ServerConfig{
 		Port: 6000,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to start adb server: %q",err)
 	}
 	client.StartServer()
 	defer client.KillServer()
@@ -85,7 +101,6 @@ func main() {
 	go func() {
 		for {
 			updateCache()
-			time.Sleep(5 * time.Second)
 		}
 	}()
 
@@ -107,12 +122,11 @@ func updateCache() error {
 		return err
 	}
 	out = strings.Trim(out, "\n\t ")
-	var refreshedPkgs []App
+	refreshedPkgs := make(map[App]bool)
 	for _, pkg := range strings.Split(out, "\n") {
 		pkg = strings.Split(pkg, ":")[1]
 		delim := strings.LastIndex(pkg, "=")
-		entry := App{}
-		entry.Package = pkg[delim+1:]
+		app := App{Package: pkg[delim+1:]}
 		if len(pkgs) != 0 {
 			command := aaptPath + " d badging " + pkg[:delim]
 			out, err := device.RunCommand(command)
@@ -122,12 +136,12 @@ func updateCache() error {
 
 			for _, line := range strings.Split(out, "\n") {
 				if strings.Contains(line, "application-label") {
-					entry.Name = line[19 : len(line)-1]
+					app.Name = line[19 : len(line)-1]
 					break
 				}
 			}
 		}
-		refreshedPkgs = append(refreshedPkgs, entry)
+		refreshedPkgs[app] = true
 
 	}
 	pkgs = refreshedPkgs
@@ -137,26 +151,36 @@ func updateCache() error {
 func uninstallApp(app App) {
 	command := fmt.Sprintf("pm uninstall --user 0 %s", app.Package)
 	out, err := device.RunCommand(command)
-	log.Print(out)
 	checkErr(err)
 	if strings.Contains(out, "Success") {
-		updateCache()
+		// Remove the app from the set
+		pkgs[app] = false
 	}
 }
 
-func search(query string) []App {
-	var result []App
+func search(query string) Apps {
+	var result Apps
 	query = strings.ToLower(strings.Trim(query, "\n\t "))
-	for _, entry := range pkgs {
+	for entry, ok := range pkgs {
+		if !ok {
+			continue
+		}
 		if strings.Contains(strings.ToLower(entry.Name), query) || strings.Contains(strings.ToLower(entry.Package), query) {
 			result = append(result, entry)
 		}
 	}
+	sort.Sort(result)
 	return result
 }
 
 func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
-	result := search(v.Buffer())
+flushed := false
+result := []App{}
+flush := func() {
+	listing.Clear()
+	result = search(v.Buffer())
+}
+
 	switch {
 	case ch != 0 && mod == 0:
 		v.EditWrite(ch)
@@ -173,6 +197,8 @@ func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 	case key == gocui.KeyInsert:
 		v.Overwrite = !v.Overwrite
 	case key == gocui.KeyEnter:
+		flush()
+		flushed = true
 		uninstallApp(result[selection])
 	case key == gocui.KeyArrowLeft:
 		v.MoveCursor(-1, 0, false)
@@ -185,7 +211,9 @@ func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 			selection--
 		}
 	}
-	listing.Clear()
+	if !flushed {
+		flush()
+	}
 	if selection >= len(result) {
 		selection = len(result) - 1
 	}
