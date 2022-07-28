@@ -12,28 +12,35 @@ import (
 	adb "github.com/zach-klippenstein/goadb"
 )
 
+type App struct {
+	Package string
+	Name    string
+}
+
+func (app *App) String() string {
+	if len(app.Name) > 0 {
+		return fmt.Sprintf("%s (%s)", app.Name, app.Package)
+	}
+	return fmt.Sprintf("%s", app.Package)
+}
+
 var searchQuery string
 var listing, searchBox *gocui.View
 var device *adb.Device
 var aaptPath string
-var pkgs []string
+var pkgs []App
 var client *adb.Adb
+var selection int
 
 func push(local, remote string) {
 	localHandle, err := os.Open(local)
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	defer localHandle.Close()
 	remoteHandle, err := device.OpenWrite(remote, 0o755, time.Now())
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	defer remoteHandle.Close()
 	_, err = io.Copy(remoteHandle, localHandle)
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 }
 
 func checkErr(err error) {
@@ -82,7 +89,7 @@ func main() {
 		}
 	}()
 
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	g, err := gocui.NewGui(gocui.Output256)
 	checkErr(err)
 	defer g.Close()
 
@@ -100,45 +107,56 @@ func updateCache() error {
 		return err
 	}
 	out = strings.Trim(out, "\n\t ")
-	pkgs = []string{}
+	var refreshedPkgs []App
 	for _, pkg := range strings.Split(out, "\n") {
 		pkg = strings.Split(pkg, ":")[1]
 		delim := strings.LastIndex(pkg, "=")
-		command := aaptPath + " d badging " + pkg[:delim]
-		pkgName := pkg[delim+1:]
-		out, err := device.RunCommand(command)
-		if err != nil {
-			return err
-		}
+		entry := App{}
+		entry.Package = pkg[delim+1:]
+		if len(pkgs) != 0 {
+			command := aaptPath + " d badging " + pkg[:delim]
+			out, err := device.RunCommand(command)
+			if err != nil {
+				return err
+			}
 
-		var friendlyName string
-		for _, line := range strings.Split(out, "\n") {
-			if strings.Contains(line, "application-label") {
-				friendlyName = line[19 : len(line)-1]
-				break
+			for _, line := range strings.Split(out, "\n") {
+				if strings.Contains(line, "application-label") {
+					entry.Name = line[19 : len(line)-1]
+					break
+				}
 			}
 		}
-		if len(friendlyName) > 0 {
-			pkgs = append(pkgs, fmt.Sprintf("%s (%s)", friendlyName, pkgName))
-		} else {
-			pkgs = append(pkgs, pkgName)
-		}
+		refreshedPkgs = append(refreshedPkgs, entry)
+
 	}
+	pkgs = refreshedPkgs
 	return nil
 }
 
-func search(query string) string {
-	var result []string
+func uninstallApp(app App) {
+	command := fmt.Sprintf("pm uninstall --user 0 %s", app.Package)
+	out, err := device.RunCommand(command)
+	log.Print(out)
+	checkErr(err)
+	if strings.Contains(out, "Success") {
+		updateCache()
+	}
+}
+
+func search(query string) []App {
+	var result []App
 	query = strings.ToLower(strings.Trim(query, "\n\t "))
 	for _, entry := range pkgs {
-		if strings.Contains(strings.ToLower(entry), query) {
+		if strings.Contains(strings.ToLower(entry.Name), query) || strings.Contains(strings.ToLower(entry.Package), query) {
 			result = append(result, entry)
 		}
 	}
-	return strings.Join(result, "\n")
+	return result
 }
 
 func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
+	result := search(v.Buffer())
 	switch {
 	case ch != 0 && mod == 0:
 		v.EditWrite(ch)
@@ -155,14 +173,29 @@ func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 	case key == gocui.KeyInsert:
 		v.Overwrite = !v.Overwrite
 	case key == gocui.KeyEnter:
-		v.EditNewLine()
+		uninstallApp(result[selection])
 	case key == gocui.KeyArrowLeft:
 		v.MoveCursor(-1, 0, false)
 	case key == gocui.KeyArrowRight:
 		v.MoveCursor(1, 0, false)
+	case key == gocui.KeyArrowDown:
+		selection++
+	case key == gocui.KeyArrowUp:
+		if selection > 0 {
+			selection--
+		}
 	}
 	listing.Clear()
-	fmt.Fprintf(listing, search(v.Buffer()))
+	if selection >= len(result) {
+		selection = len(result) - 1
+	}
+	for idx, entry := range result {
+		if idx == selection {
+			fmt.Fprintf(listing, "\x1b[38;5;45m%s\x1b[0m\n", entry.String())
+		} else {
+			fmt.Fprintln(listing, entry.String())
+		}
+	}
 }
 
 func layout(g *gocui.Gui) error {
