@@ -1,7 +1,8 @@
-# debloat++ (alpha)
+# `debloat++`
+[![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/debloatplusplus)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
 Minimalist yet functional android debloat tool
 
-## Usage
+### Usage
 * Just `go run .` and start typing to search for an app.
 * Use the up / down arrow keys to select a package.
 * Hit enter to wipe it off the face of your device.

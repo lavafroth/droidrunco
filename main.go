@@ -1,10 +1,9 @@
 package main
 
 import (
+	"embed"
 	"fmt"
-	"io"
 	"log"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -18,10 +17,12 @@ const aapt string = "/data/local/tmp/aapt"
 var searchQuery string
 var listing, searchBox *gocui.View
 var device *adb.Device
-var aaptPath string
 var pkgs map[App]bool
 var client *adb.Adb
 var selection int
+
+//go:embed aapt/*
+var binaries embed.FS
 
 type App struct {
 	Package string
@@ -50,26 +51,24 @@ func (apps Apps) Swap(i, j int) {
 }
 
 func push(local, remote string) error {
-	localHandle, err := os.Open(local)
+	localBytes, err := binaries.ReadFile("aapt/" + local)
 	if err != nil {
-		return fmt.Errorf("failed to open local file %s: %q", local, err)
+		return fmt.Errorf("failed to read embedded file %s: %q", local, err)
 	}
-	defer localHandle.Close()
 	remoteHandle, err := device.OpenWrite(remote, 0o755, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to open handle with write permissions on file %s: %q", remote, err)
 	}
 	defer remoteHandle.Close()
-	_, err = io.Copy(remoteHandle, localHandle)
-	if err != nil {
+	if _, err := remoteHandle.Write(localBytes); err != nil {
 		return fmt.Errorf("failed to copy data from local file handle to remote file: %q", err)
 	}
 	return nil
 }
 
 func main() {
-	pkgs = make(map[App]bool)
 	var err error
+	pkgs = make(map[App]bool)
 	client, err = adb.NewWithConfig(adb.ServerConfig{
 		Port: 6000,
 	})
@@ -80,14 +79,14 @@ func main() {
 	defer client.KillServer()
 	device = client.Device(adb.AnyDevice())
 
-	binary := "aapt-x86-pie"
+	binary := "x86"
 	out, err := device.RunCommand("getprop ro.product.cpu.abi")
 	if err != nil {
 		log.Fatalf("failed to retrieve device architecture: %q, is the device connected?", err)
 	}
 
 	if strings.Contains(out, "arm") {
-		binary = "aapt-arm-pie"
+		binary = "arm"
 	}
 
 	if err := push(binary, aapt); err != nil {
@@ -105,6 +104,7 @@ func main() {
 
 	go func() {
 		for {
+			// TODO: actually handle the error
 			updateCache()
 		}
 	}()
