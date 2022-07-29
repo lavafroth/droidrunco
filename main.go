@@ -95,34 +95,34 @@ func main() {
 	time.Sleep(1 * time.Second)
 	out, err = device.RunCommand(aapt)
 	if err != nil {
-		log.Fatal("failed to execute aapt: %q", err)
+		log.Fatalf("failed to execute aapt: %q", err)
 	}
 
 	if strings.Contains(out, "not executable") {
-		log.Fatal("Failed to execute aapt: %q", out)
+		log.Fatalf("Failed to execute aapt: %q", out)
 	}
 
 	log.Println("Initializing package entries ...")
-	updateCache()
+	refreshPackageList()
 	log.Println("Done.")
 
 	go func() {
 		for {
 			// TODO: actually handle the error
-			updateCache()
+			refreshPackageList()
 		}
 	}()
 
 	g, err := gocui.NewGui(gocui.Output256)
 	if err != nil {
-		log.Fatal("failed to create new console ui: %q", err)
+		log.Fatalf("failed to create new console ui: %q", err)
 	}
 	defer g.Close()
 
 	g.SetManagerFunc(layout)
 	err = g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
 	if err != nil {
-		log.Fatal(`failed to set "quit" keybind as ctrl + c: %q`, err)
+		log.Fatalf(`failed to set "quit" keybind as ctrl + c: %q`, err)
 	}
 
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
@@ -130,7 +130,7 @@ func main() {
 	}
 }
 
-func updateCache() error {
+func refreshPackageList() error {
 	out, err := device.RunCommand("pm list packages -f")
 	if err != nil {
 		return fmt.Errorf("failed to fetch list of packages: %q", err)
@@ -158,7 +158,7 @@ func updateCache() error {
 }
 
 func uninstallApp(app App) {
-	out, err := device.RunCommand(fmt.Sprintf("pm uninstall --user 0 %s", app.Package))
+	out, err := device.RunCommand(fmt.Sprintf("pm uninstall --user 0 -k %s", app.Package))
 	if err != nil {
 		log.Fatalf("failed to run uninstall command on %s: %q", app.String(), err)
 	}
@@ -181,6 +181,26 @@ func search(query string) Apps {
 	}
 	sort.Sort(result)
 	return result
+}
+
+func refreshListing() {
+	listing.Clear()
+	apps := search(searchBox.Buffer())
+	appCount := len(apps) - 1
+	if selection > appCount {
+		selection = appCount
+	}
+	if selection < 0 {
+		selection = 0
+	}
+	listing.SetOrigin(0, selection)
+	for i, app := range apps {
+		if i == selection {
+			fmt.Fprintf(listing, "\x1b[38;5;45m%s\x1b[0m\n", app.String())
+			continue
+		}
+		fmt.Fprintln(listing, app.String())
+	}
 }
 
 func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
@@ -208,28 +228,11 @@ func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 		selection++
 	case key == gocui.KeyArrowUp:
 		selection--
-	}
-	listing.Clear()
-	apps := search(v.Buffer())
-	if key == gocui.KeyEnter {
+	case key == gocui.KeyEnter:
+		apps := search(searchBox.Buffer())
 		uninstallApp(apps[selection])
-		return
 	}
-	appCount := len(apps) - 1
-	if selection > appCount {
-		selection = appCount
-	}
-	if selection < 0 {
-		selection = 0
-	}
-	listing.SetOrigin(0, selection)
-	for i, app := range apps {
-		if i == selection {
-			fmt.Fprintf(listing, "\x1b[38;5;45m%s\x1b[0m\n", app.String())
-			continue
-		}
-		fmt.Fprintln(listing, app.String())
-	}
+	refreshListing()
 }
 
 func layout(g *gocui.Gui) error {
