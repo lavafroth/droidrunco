@@ -13,22 +13,27 @@ Minimalist yet functional android debloat tool
   <p>
   <details>
   <summary>Linux</summary>
+
   Debian Base:
   ```bash
   sudo apt install android-sdk-platform-tools
   ```
+
   Arch-Linux Base:
   ```bash
   sudo pacman -S android-tools
   ```
+
   Red Hat Base:
   ```bash
   sudo yum install android-tools
   ```
+
   OpenSUSE Base:
   ```bash
   sudo zypper install android-tools
   ```
+
   </details>
   </p>
 
@@ -48,13 +53,15 @@ Minimalist yet functional android debloat tool
   <details>
   <summary>Windows</summary>
 
-  - Download and extract [android platform tools](https://dl.google.com/android/repository/platform-tools-latest-windows.zip). [Add the extracted folder to your PATH](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/).
+  - Download and extract [android platform tools](https://dl.google.com/android/repository/platform-tools-latest-windows.zip).
+  - [Add the extracted folder to your PATH](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/).
   - [Install USB drivers for your device](https://developer.android.com/studio/run/oem-usb#Drivers)
   - Check your device is detected:
-    ```batch
-    adb devices
-		adb kill-server
-    ```
+
+```batch
+adb devices
+adb kill-server
+```
   </details>
   </p>
 
