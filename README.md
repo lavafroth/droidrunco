@@ -1,14 +1,13 @@
 # `debloat++`
 [![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/debloatplusplus)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
 
-Minimalist yet functional android debloat tool
+Your Android device. Cleaner.
 
 ### Installation
 
 - Backup your data before you accidentally screw up.
-- Enable *Developer Options* on your smartphone.
-- Switch on *USB Debugging* from the developer panel.
-- From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the phone can no longer associate your identity)
+- [Enable Developer Options and USB debugging on your device.](https://developer.android.com/studio/debug/dev-options#enable)
+- From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
 - Install ADB (see the intructions by clicking on your OS below):
   <p>
   <details>
