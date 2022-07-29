@@ -58,10 +58,10 @@ Minimalist yet functional android debloat tool
   - [Install USB drivers for your device](https://developer.android.com/studio/run/oem-usb#Drivers)
   - Check your device is detected:
 
-```batch
+		```batch
 adb devices
 adb kill-server
-```
+		```
   </details>
   </p>
 
