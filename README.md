@@ -11,22 +11,22 @@
   <summary>Linux</summary>
 
 
-  Debian Base:
+  Debian:
   ```bash
   sudo apt install android-sdk-platform-tools
   ```
 
-  Arch-Linux Base:
+  Arch:
   ```bash
   sudo pacman -S android-tools
   ```
 
-  Red Hat Base:
+  Red Hat:
   ```bash
   sudo yum install android-tools
   ```
 
-  OpenSUSE Base:
+  OpenSUSE:
   ```bash
   sudo zypper install android-tools
   ```
@@ -75,11 +75,11 @@ go run .
 ```
 
 ### Usage
-- Kill any previously running adb servers
+- Kill any previously running adb servers on the host.
 ```
 adb kill-server
 ```
-- Backup your data before you accidentally screw up.
+- Backup the data on your device before you accidentally screw up.
 - [Enable Developer Options and USB debugging on your device.](https://developer.android.com/studio/debug/dev-options#enable)
 - From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
 - Run `debloatplusplus` and start typing to search for an app.
