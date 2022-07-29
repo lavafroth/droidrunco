@@ -57,15 +57,13 @@ Minimalist yet functional android debloat tool
   - [Add the extracted folder to your PATH](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/).
   - [Install USB drivers for your device](https://developer.android.com/studio/run/oem-usb#Drivers)
   - Check your device is detected:
-
-		```batch
-adb devices
-adb kill-server
-		```
+  ```batch
+  adb devices
+  ```
   </details>
   </p>
 
-- Install debloat++
+- Install `debloat++`
 
 One can either install the binary by running
 
@@ -80,8 +78,11 @@ go run .
 ```
 
 ### Usage
-
-- Just `go run .` and start typing to search for an app.
+- Kill any previously running adb servers
+```
+adb kill-server
+```
+- Run `debloat++` and start typing to search for an app.
 - Use the up / down arrow keys to select a package.
 - Hit enter to wipe it off the face of your device.
 
