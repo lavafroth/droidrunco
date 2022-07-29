@@ -5,7 +5,7 @@ Minimalist yet functional android debloat tool
 
 ### Installation
 
-- Back your data up before you screw up.
+- Backup your data before you accidentally screw up.
 - Enable *Developer Options* on your smartphone.
 - Switch on *USB Debugging* from the developer panel.
 - From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the phone can no longer associate your identity)
