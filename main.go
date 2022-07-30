@@ -15,7 +15,7 @@ import (
 const aapt string = "/data/local/tmp/aapt"
 
 var searchQuery string
-var listing, searchBox *gocui.View
+var listing, searchBox, logView *gocui.View
 var device *adb.Device
 var pkgs map[App]bool
 var client *adb.Adb
@@ -102,13 +102,11 @@ func main() {
 		log.Fatalf("Failed to execute aapt: %q", out)
 	}
 
-	log.Println("Initializing package entries ...")
+	fmt.Print("Refreshing package entries ... ")
 	refreshPackageList()
-	log.Println("Done.")
-
+	fmt.Println("done.")
 	go func() {
 		for {
-			// TODO: actually handle the error
 			refreshPackageList()
 		}
 	}()
@@ -120,20 +118,20 @@ func main() {
 	defer g.Close()
 
 	g.SetManagerFunc(layout)
+
 	err = g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
 	if err != nil {
 		log.Fatalf(`failed to set "quit" keybind as ctrl + c: %q`, err)
 	}
-
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Fatal(err)
 	}
 }
 
-func refreshPackageList() error {
+func refreshPackageList() {
 	out, err := device.RunCommand("pm list packages -f")
 	if err != nil {
-		return fmt.Errorf("failed to fetch list of packages: %q", err)
+		fmt.Fprintf(logView, "failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
 	refreshedPkgs := make(map[App]bool)
@@ -143,7 +141,7 @@ func refreshPackageList() error {
 		app := App{Package: pkg[delim+1:]}
 		out, err = device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, pkg[:delim]))
 		if err != nil {
-			return fmt.Errorf("failed to refresh package list: %q", err)
+			fmt.Fprintf(logView, "failed to refresh package list: %q", err)
 		}
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "application-label") {
@@ -154,16 +152,18 @@ func refreshPackageList() error {
 		refreshedPkgs[app] = true
 	}
 	pkgs = refreshedPkgs
-	return nil
 }
 
 func uninstallApp(app App) {
 	out, err := device.RunCommand(fmt.Sprintf("pm uninstall --user 0 -k %s", app.Package))
 	if err != nil {
-		log.Fatalf("failed to run uninstall command on %s: %q", app.String(), err)
+		fmt.Fprintf(logView, "failed to run uninstall command on %s: %q\n", app.String(), err)
+		return
 	}
 	if !strings.Contains(out, "Success") {
-		log.Fatalf("failed to uninstall %s", app.String())
+		fmt.Fprintf(logView, "failed to uninstall %s\n", app.String())
+	} else {
+		fmt.Fprintf(logView, "successfully uninstalled %s\n", app.String())
 	}
 	pkgs[app] = false
 }
@@ -238,10 +238,17 @@ func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 func layout(g *gocui.Gui) error {
 	var err error
 	X, Y := g.Size()
-	if listing, err = g.SetView("listing", 0, 3, X-1, Y-1); err != nil && err != gocui.ErrUnknownView {
+	if listing, err = g.SetView("listing", 0, 3, X-1, int(4*Y/5)-1); err != nil && err != gocui.ErrUnknownView {
 		return err
 	}
 	listing.Wrap = true
+
+	if logView, err = g.SetView("logView", 0, int(4*Y/5), X-1, Y-1); err != nil && err != gocui.ErrUnknownView {
+		return err
+	}
+	logView.Wrap = true
+	logView.Autoscroll = true
+	logView.Title = " Logs "
 	if searchBox, err = g.SetView("searchBox", 0, 0, X-1, 2); err != nil && err != gocui.ErrUnknownView {
 		return err
 	}
