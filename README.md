@@ -83,7 +83,8 @@ adb kill-server
 - [Enable Developer Options and USB debugging on your device.](https://developer.android.com/studio/debug/dev-options#enable)
 - From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
 - Run `debloatplusplus` and start typing to search for an app.
-- Use the up / down arrow keys to select a package.
+- Use the up / down arrow keys to select an app.
 - Hit enter to wipe it off the face of your device.
+- If an essential system app gets accidentally removed and `debloatplusplus` is still running, select the app (now marked in red) and hit enter again to restore it.
 
 [![asciicast](https://asciinema.org/a/511427.svg)](https://asciinema.org/a/511427)

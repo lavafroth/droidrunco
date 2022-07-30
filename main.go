@@ -134,14 +134,14 @@ func refreshPackageList() {
 		fmt.Fprintf(logView, "failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
-	refreshedPkgs := make(map[App]bool)
+	newPkgs := make(map[App]bool)
 	for _, pkg := range strings.Split(out, "\n") {
 		pkg = strings.Split(pkg, ":")[1]
 		delim := strings.LastIndex(pkg, "=")
 		app := App{Package: pkg[delim+1:]}
 		out, err = device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, pkg[:delim]))
 		if err != nil {
-			fmt.Fprintf(logView, "failed to refresh package list: %q", err)
+			fmt.Fprintf(logView, "failed to retrieve package label for %s: %q", app.Package, err)
 		}
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "application-label") {
@@ -149,32 +149,48 @@ func refreshPackageList() {
 				break
 			}
 		}
-		refreshedPkgs[app] = true
+		newPkgs[app] = true
 	}
-	pkgs = refreshedPkgs
+	for pkg, _ := range pkgs {
+		if _, ok := newPkgs[pkg]; !ok {
+			newPkgs[pkg] = false
+		}
+	}
+	pkgs = newPkgs
 }
 
-func uninstallApp(app App) {
-	out, err := device.RunCommand(fmt.Sprintf("pm uninstall --user 0 -k %s", app.Package))
+func toggleApp(app App) {
+	if state, _ := pkgs[app]; state {
+		out, err := device.RunCommand(fmt.Sprintf("pm uninstall --user 0 -k %s", app.Package))
+		if err != nil {
+			fmt.Fprintf(logView, "Failed to run uninstall command on %s: %q\n", app.String(), err)
+			return
+		}
+		if !strings.Contains(out, "Success") {
+			fmt.Fprintf(logView, "Failed to uninstall %s\n", app.String())
+			return
+		}
+		fmt.Fprintf(logView, "Successfully uninstalled %s\n", app.String())
+		pkgs[app] = false
+		return
+	}
+	out, err := device.RunCommand(fmt.Sprintf("pm install-existing %s", app.Package))
 	if err != nil {
-		fmt.Fprintf(logView, "failed to run uninstall command on %s: %q\n", app.String(), err)
+		fmt.Fprintf(logView, "Failed to run reinstall command on %s: %q\n", app.String(), err)
 		return
 	}
 	if !strings.Contains(out, "Success") {
-		fmt.Fprintf(logView, "failed to uninstall %s\n", app.String())
-	} else {
-		fmt.Fprintf(logView, "successfully uninstalled %s\n", app.String())
+		fmt.Fprintf(logView, "Failed to reinstall %s\n", app.String())
+		return
 	}
-	pkgs[app] = false
+	fmt.Fprintf(logView, "Successfully reinstalled %s\n", app.String())
+	pkgs[app] = true
 }
 
 func search(query string) Apps {
 	var result Apps
 	query = strings.ToLower(strings.Trim(query, "\n\t "))
-	for entry, ok := range pkgs {
-		if !ok {
-			continue
-		}
+	for entry, _ := range pkgs {
 		if strings.Contains(strings.ToLower(entry.Name), query) || strings.Contains(strings.ToLower(entry.Package), query) {
 			result = append(result, entry)
 		}
@@ -195,11 +211,14 @@ func refreshListing() {
 	}
 	listing.SetOrigin(0, selection)
 	for i, app := range apps {
-		if i == selection {
+		switch {
+		case i == selection:
 			fmt.Fprintf(listing, "\x1b[38;5;45m%s\x1b[0m\n", app.String())
-			continue
+		case len(pkgs) > 0 && !pkgs[app]:
+			fmt.Fprintf(listing, "\x1b[38;5;202m%s\x1b[0m\n", app.String())
+		default:
+			fmt.Fprintln(listing, app.String())
 		}
-		fmt.Fprintln(listing, app.String())
 	}
 }
 
@@ -230,7 +249,7 @@ func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 		selection--
 	case key == gocui.KeyEnter:
 		apps := search(searchBox.Buffer())
-		uninstallApp(apps[selection])
+		toggleApp(apps[selection])
 	}
 	refreshListing()
 }
