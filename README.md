@@ -50,6 +50,7 @@ Choose an OS:
     choco install adb
     ```
   </details>
+
 ### Install `debloat++`
 
 One can either install the binary by running
