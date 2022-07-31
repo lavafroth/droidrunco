@@ -3,13 +3,13 @@ Your Android device. Cleaner.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/debloatplusplus)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
 
-### Installation
+## Installation
 
-- Install ADB (see the intructions by clicking on your OS below):
-  <p>
-  <details>
+### Install ADB
+Choose an OS:
+<details>
   <summary>Linux</summary>
-
+  
   Debian:
   ```bash
   sudo apt install android-sdk-platform-tools
@@ -31,9 +31,7 @@ Your Android device. Cleaner.
   ```
 
   </details>
-  </p>
 
-  <p>
   <details>
   <summary>macOS</summary>
 
@@ -43,9 +41,6 @@ Your Android device. Cleaner.
     brew install android-platform-tools
     ```
   </details>
-  </p>
-
-  <p>
   <details>
   <summary>Windows</summary>
 
@@ -54,12 +49,8 @@ Your Android device. Cleaner.
     ```powershell
     choco install adb
     ```
-
   </details>
-  </p>
-
-- Install `debloat++`
-
+### Install `debloat++`
 One can either install the binary by running
 
 ```bash
@@ -72,7 +63,7 @@ or clone the repository and in the project directory run
 go run .
 ```
 
-### Usage
+## Usage
 - Kill any previously running adb servers on the host
 ```
 adb kill-server
