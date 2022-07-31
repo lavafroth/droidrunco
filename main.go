@@ -111,7 +111,7 @@ func main() {
 		}
 	}()
 
-	g, err := gocui.NewGui(gocui.Output256)
+	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		log.Fatalf("failed to create new console ui: %q", err)
 	}
@@ -213,9 +213,9 @@ func refreshListing() {
 	for i, app := range apps {
 		switch {
 		case i == selection:
-			fmt.Fprintf(listing, "\x1b[38;5;45m%s\x1b[0m\n", app.String())
+			fmt.Fprintf(listing, "\x1b[36;1m%s\x1b[0m\n", app.String())
 		case len(pkgs) > 0 && !pkgs[app]:
-			fmt.Fprintf(listing, "\x1b[38;5;202m%s\x1b[0m\n", app.String())
+			fmt.Fprintf(listing, "\x1b[31;4m%s\x1b[0m\n", app.String())
 		default:
 			fmt.Fprintln(listing, app.String())
 		}
