@@ -51,6 +51,7 @@ Choose an OS:
     ```
   </details>
 ### Install `debloat++`
+
 One can either install the binary by running
 
 ```bash
