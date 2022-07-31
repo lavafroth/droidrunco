@@ -53,17 +53,19 @@ Choose an OS:
 
 ### Install `debloat++`
 
-One can either install the binary by running
+`debloat++` can be installed in either of the following ways:
 
-```bash
-go install github.com/lavafroth/debloatplusplus@latest
-```
+- Download the binary for their specific operating system from the [releases](https://github.com/lavafroth/debloatplusplus/releases) section.
 
-or clone the repository and in the project directory run
+- If you're feeling adventurous
+  ```bash
+  go install github.com/lavafroth/debloatplusplus@latest
+  ```
 
-```bash
-go run .
-```
+- If you're a skeptic willing to inspect the code, clone the repository and in the project directory run
+  ```bash
+  go run .
+  ```
 
 ## Usage
 - Kill any previously running adb servers on the host
