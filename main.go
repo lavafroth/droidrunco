@@ -1,18 +1,18 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"log"
 	"sort"
 	"strings"
-	"time"
+    "io/ioutil"
+    "bytes"
 
 	"github.com/jroimartin/gocui"
+	"github.com/shogo82148/androidbinary"
+	"github.com/shogo82148/androidbinary/apk"
 	adb "github.com/zach-klippenstein/goadb"
 )
-
-const aapt string = "/data/local/tmp/aapt"
 
 var searchQuery string
 var listing, searchBox, logView *gocui.View
@@ -20,9 +20,7 @@ var device *adb.Device
 var pkgs map[App]bool
 var client *adb.Adb
 var selection int
-
-//go:embed aapt/*
-var binaries embed.FS
+var resConfigEN *androidbinary.ResTableConfig
 
 type App struct {
 	Package string
@@ -50,24 +48,12 @@ func (apps Apps) Swap(i, j int) {
 	apps[i], apps[j] = apps[j], apps[i]
 }
 
-func push(local, remote string) error {
-	localBytes, err := binaries.ReadFile("aapt/" + local)
-	if err != nil {
-		return fmt.Errorf("failed to read embedded file %s: %q", local, err)
-	}
-	remoteHandle, err := device.OpenWrite(remote, 0o755, time.Now())
-	if err != nil {
-		return fmt.Errorf("failed to open handle with write permissions on file %s: %q", remote, err)
-	}
-	defer remoteHandle.Close()
-	if _, err := remoteHandle.Write(localBytes); err != nil {
-		return fmt.Errorf("failed to copy data from local file handle to remote file: %q", err)
-	}
-	return nil
-}
-
 func main() {
 	var err error
+    resConfigEN = &androidbinary.ResTableConfig{
+    Language: [2]uint8{uint8('e'), uint8('n')},
+}
+
 	pkgs = make(map[App]bool)
 	client, err = adb.NewWithConfig(adb.ServerConfig{
 		Port: 6000,
@@ -78,30 +64,6 @@ func main() {
 	client.StartServer()
 	defer client.KillServer()
 	device = client.Device(adb.AnyDevice())
-
-	binary := "x86"
-	out, err := device.RunCommand("getprop ro.product.cpu.abi")
-	if err != nil {
-		log.Fatalf("failed to retrieve device architecture: %q, is the device connected?", err)
-	}
-
-	if strings.Contains(out, "arm") {
-		binary = "arm"
-	}
-
-	if err := push(binary, aapt); err != nil {
-		log.Fatal(err)
-	}
-	time.Sleep(1 * time.Second)
-	out, err = device.RunCommand(aapt)
-	if err != nil {
-		log.Fatalf("failed to execute aapt: %q", err)
-	}
-
-	if strings.Contains(out, "not executable") {
-		log.Fatalf("Failed to execute aapt: %q", out)
-	}
-
 	fmt.Print("Refreshing package entries ... ")
 	refreshPackageList()
 	fmt.Println("done.")
@@ -128,28 +90,43 @@ func main() {
 	}
 }
 
+func fetchLabel(path string) (label string) {
+    fileStat, err := device.Stat(path)
+    if err != nil {
+        return
+    }
+    rawReader, err := device.OpenRead(path)
+    if err != nil {
+        return
+    }
+    defer rawReader.Close()
+    rawBytes, err := ioutil.ReadAll(rawReader)
+    if err != nil {
+        return
+    }
+    apk, err := apk.OpenZipReader(bytes.NewReader(rawBytes), int64(fileStat.Size))
+    if err != nil {
+        return
+    }
+    defer apk.Close()
+    label, err = apk.Label(resConfigEN)
+    if err != nil {
+        return
+    }
+    return
+}
+
 func refreshPackageList() {
 	out, err := device.RunCommand("pm list packages -f")
 	if err != nil {
-		fmt.Fprintf(logView, "failed to fetch list of packages: %q", err)
+		log.Fatalf("failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
 	newPkgs := make(map[App]bool)
-	for _, pkg := range strings.Split(out, "\n") {
+    for _, pkg := range strings.Split(out, "\n") {
 		pkg = strings.Split(pkg, ":")[1]
 		delim := strings.LastIndex(pkg, "=")
-		app := App{Package: pkg[delim+1:]}
-		out, err = device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, pkg[:delim]))
-		if err != nil {
-			fmt.Fprintf(logView, "failed to retrieve package label for %s: %q", app.Package, err)
-		}
-		for _, line := range strings.Split(out, "\n") {
-			if strings.Contains(line, "application-label") {
-				app.Name = line[19 : len(line)-1]
-				break
-			}
-		}
-		newPkgs[app] = true
+		newPkgs[App{Name:fetchLabel(pkg[:delim]), Package: pkg[delim+1:]}] = true
 	}
 	for pkg, _ := range pkgs {
 		if _, ok := newPkgs[pkg]; !ok {
