@@ -1,37 +1,41 @@
 package main
 
 import (
-	"bytes"
+	"embed"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jroimartin/gocui"
-	"github.com/shogo82148/androidbinary"
-	"github.com/shogo82148/androidbinary/apk"
 	adb "github.com/zach-klippenstein/goadb"
 )
+
+const aapt string = "/data/local/tmp/aapt"
 
 var searchQuery string
 var listing, searchBox, logView *gocui.View
 var device *adb.Device
-var pkgs map[App]bool
+var pkgs map[string]*App
 var client *adb.Adb
 var selection int
-var resConfigEN *androidbinary.ResTableConfig
+
+//go:embed aapt/*
+var binaries embed.FS
 
 type App struct {
+	Path    string
 	Package string
-	Name    string
+	Label   string
+	Enabled bool
 }
 
-type Apps []App
+type Apps []*App
 
 func (app *App) String() string {
-	if len(app.Name) > 0 {
-		return fmt.Sprintf("%s (%s)", app.Name, app.Package)
+	if len(app.Label) > 0 {
+		return fmt.Sprintf("%s (%s)", app.Label, app.Package)
 	}
 	return app.Package
 }
@@ -48,13 +52,26 @@ func (apps Apps) Swap(i, j int) {
 	apps[i], apps[j] = apps[j], apps[i]
 }
 
+func push(local, remote string) error {
+	localBytes, err := binaries.ReadFile("aapt/" + local)
+	if err != nil {
+		return fmt.Errorf("failed to read embedded file %s: %q", local, err)
+	}
+	remoteHandle, err := device.OpenWrite(remote, 0o755, time.Now())
+	if err != nil {
+		return fmt.Errorf("failed to open handle with write permissions on file %s: %q", remote, err)
+	}
+	defer remoteHandle.Close()
+	if _, err := remoteHandle.Write(localBytes); err != nil {
+		return fmt.Errorf("failed to copy data from local file handle to remote file: %q", err)
+	}
+	return nil
+}
+
 func main() {
 	var err error
-	resConfigEN = &androidbinary.ResTableConfig{
-		Language: [2]uint8{uint8('e'), uint8('n')},
-	}
 
-	pkgs = make(map[App]bool)
+	pkgs = make(map[string]*App)
 	client, err = adb.NewWithConfig(adb.ServerConfig{
 		Port: 6000,
 	})
@@ -64,7 +81,29 @@ func main() {
 	client.StartServer()
 	defer client.KillServer()
 	device = client.Device(adb.AnyDevice())
-	fmt.Print("Refreshing package entries ... ")
+	binary := "x86"
+	out, err := device.RunCommand("getprop ro.product.cpu.abi")
+	if err != nil {
+		log.Fatalf("failed to retrieve device architecture: %q, is the device connected?", err)
+	}
+
+	if strings.Contains(out, "arm") {
+		binary = "arm"
+	}
+
+	if err := push(binary, aapt); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(1 * time.Second)
+	out, err = device.RunCommand(aapt)
+	if err != nil {
+		log.Fatalf("failed to execute aapt: %q", err)
+	}
+
+	if strings.Contains(out, "not executable") {
+		log.Fatalf("Failed to execute aapt: %q", out)
+	}
+	fmt.Print("Initializing package entries ... ")
 	refreshPackageList()
 	fmt.Println("done.")
 	go func() {
@@ -90,30 +129,21 @@ func main() {
 	}
 }
 
-func fetchLabel(path string) (label string) {
-	fileStat, err := device.Stat(path)
-	if err != nil {
-		return
+func worker(appChan, workChan chan *App) {
+	for app := range workChan {
+		out, err := device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, app.Path))
+		if err != nil {
+			fmt.Fprintf(logView, "failed to retrieve package label for apk at path %s: %q", app.Path, err)
+		}
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "application-label") {
+				app.Label = line[19:len(line)-1]
+                break
+			}
+		}
+
+		appChan <- app
 	}
-	rawReader, err := device.OpenRead(path)
-	if err != nil {
-		return
-	}
-	defer rawReader.Close()
-	rawBytes, err := ioutil.ReadAll(rawReader)
-	if err != nil {
-		return
-	}
-	apk, err := apk.OpenZipReader(bytes.NewReader(rawBytes), int64(fileStat.Size))
-	if err != nil {
-		return
-	}
-	defer apk.Close()
-	label, err = apk.Label(resConfigEN)
-	if err != nil {
-		return
-	}
-	return
 }
 
 func refreshPackageList() {
@@ -122,23 +152,44 @@ func refreshPackageList() {
 		log.Fatalf("failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
-	newPkgs := make(map[App]bool)
-	for _, pkg := range strings.Split(out, "\n") {
-		pkg = strings.Split(pkg, ":")[1]
-		delim := strings.LastIndex(pkg, "=")
-		newPkgs[App{Name: fetchLabel(pkg[:delim]), Package: pkg[delim+1:]}] = true
+	newPkgs := make(map[string]*App)
+	appChan := make(chan *App)
+	workChan := make(chan *App, 8)
+	for i := 0; i < 8; i++ {
+		go worker(appChan, workChan)
 	}
-	for pkg, _ := range pkgs {
+	lines := strings.Split(out, "\n")
+	newPkgCount := len(lines)
+	go func() {
+		for _, line := range lines {
+			pkg := strings.Split(line, ":")[1]
+			delim := strings.LastIndex(pkg, "=")
+			path := pkg[:delim]
+			packageName := pkg[delim+1:]
+			if app, ok := pkgs[packageName]; ok {
+				newPkgs[packageName] = app
+				newPkgCount--
+				continue
+			}
+			workChan <- &App{Package: packageName, Path: path, Enabled: true}
+		}
+	}()
+	for ; newPkgCount > 0; newPkgCount-- {
+		app := <-appChan
+		newPkgs[app.Package] = app
+	}
+	for pkg, app := range pkgs {
 		if _, ok := newPkgs[pkg]; !ok {
-			newPkgs[pkg] = false
+			app.Enabled = false
+			newPkgs[pkg] = app
 		}
 	}
 	pkgs = newPkgs
 }
 
-func toggleApp(app App) {
-	if state, _ := pkgs[app]; state {
-		out, err := device.RunCommand(fmt.Sprintf("pm uninstall --user 0 -k %s", app.Package))
+func toggleApp(app *App) {
+	if app.Enabled {
+		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", app.Package))
 		if err != nil {
 			fmt.Fprintf(logView, "Failed to run uninstall command on %s: %q\n", app.String(), err)
 			return
@@ -148,7 +199,7 @@ func toggleApp(app App) {
 			return
 		}
 		fmt.Fprintf(logView, "Successfully uninstalled %s\n", app.String())
-		pkgs[app] = false
+		app.Enabled = false
 		return
 	}
 	out, err := device.RunCommand(fmt.Sprintf("pm install-existing %s", app.Package))
@@ -161,15 +212,15 @@ func toggleApp(app App) {
 		return
 	}
 	fmt.Fprintf(logView, "Successfully reinstalled %s\n", app.String())
-	pkgs[app] = true
+	app.Enabled = true
 }
 
 func search(query string) Apps {
 	var result Apps
 	query = strings.ToLower(strings.Trim(query, "\n\t "))
-	for entry, _ := range pkgs {
-		if strings.Contains(strings.ToLower(entry.Name), query) || strings.Contains(strings.ToLower(entry.Package), query) {
-			result = append(result, entry)
+	for _, app := range pkgs {
+		if strings.Contains(strings.ToLower(app.Label), query) || strings.Contains(strings.ToLower(app.Package), query) {
+			result = append(result, app)
 		}
 	}
 	sort.Sort(result)
@@ -191,7 +242,7 @@ func refreshListing() {
 		switch {
 		case i == selection:
 			fmt.Fprintf(listing, "\x1b[36;1m%s\x1b[0m\n", app.String())
-		case len(pkgs) > 0 && !pkgs[app]:
+		case len(pkgs) > 0 && !app.Enabled:
 			fmt.Fprintf(listing, "\x1b[31;4m%s\x1b[0m\n", app.String())
 		default:
 			fmt.Fprintln(listing, app.String())

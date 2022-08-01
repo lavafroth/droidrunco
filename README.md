@@ -55,9 +55,9 @@ Choose an OS:
 
 `debloat++` can be installed in either of the following ways:
 
-- Download the binary for their specific operating system from the [releases](https://github.com/lavafroth/debloatplusplus/releases) section.
+- Download the binary for your operating system from the [releases](https://github.com/lavafroth/debloatplusplus/releases).
 
-- If you're feeling adventurous
+- If feeling adventurous, try
   ```bash
   go install github.com/lavafroth/debloatplusplus@latest
   ```
