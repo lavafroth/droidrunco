@@ -137,8 +137,8 @@ func worker(appChan, workChan chan *App) {
 		}
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "application-label") {
-				app.Label = line[19:len(line)-1]
-                break
+				app.Label = line[19 : len(line)-1]
+				break
 			}
 		}
 

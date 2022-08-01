@@ -80,4 +80,4 @@ adb kill-server
 - Hit enter to wipe it off the face of your device
 - If an essential system app gets accidentally removed and `debloatplusplus` is still running, select the app (now marked in red) and hit enter again to restore it
 
-[![asciicast](https://asciinema.org/a/511427.svg)](https://asciinema.org/a/511427)
+[![asciicast](https://asciinema.org/a/511965.svg)](https://asciinema.org/a/511965)
