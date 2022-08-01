@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"sort"
 	"strings"
-    "io/ioutil"
-    "bytes"
 
 	"github.com/jroimartin/gocui"
 	"github.com/shogo82148/androidbinary"
@@ -50,9 +50,9 @@ func (apps Apps) Swap(i, j int) {
 
 func main() {
 	var err error
-    resConfigEN = &androidbinary.ResTableConfig{
-    Language: [2]uint8{uint8('e'), uint8('n')},
-}
+	resConfigEN = &androidbinary.ResTableConfig{
+		Language: [2]uint8{uint8('e'), uint8('n')},
+	}
 
 	pkgs = make(map[App]bool)
 	client, err = adb.NewWithConfig(adb.ServerConfig{
@@ -91,29 +91,29 @@ func main() {
 }
 
 func fetchLabel(path string) (label string) {
-    fileStat, err := device.Stat(path)
-    if err != nil {
-        return
-    }
-    rawReader, err := device.OpenRead(path)
-    if err != nil {
-        return
-    }
-    defer rawReader.Close()
-    rawBytes, err := ioutil.ReadAll(rawReader)
-    if err != nil {
-        return
-    }
-    apk, err := apk.OpenZipReader(bytes.NewReader(rawBytes), int64(fileStat.Size))
-    if err != nil {
-        return
-    }
-    defer apk.Close()
-    label, err = apk.Label(resConfigEN)
-    if err != nil {
-        return
-    }
-    return
+	fileStat, err := device.Stat(path)
+	if err != nil {
+		return
+	}
+	rawReader, err := device.OpenRead(path)
+	if err != nil {
+		return
+	}
+	defer rawReader.Close()
+	rawBytes, err := ioutil.ReadAll(rawReader)
+	if err != nil {
+		return
+	}
+	apk, err := apk.OpenZipReader(bytes.NewReader(rawBytes), int64(fileStat.Size))
+	if err != nil {
+		return
+	}
+	defer apk.Close()
+	label, err = apk.Label(resConfigEN)
+	if err != nil {
+		return
+	}
+	return
 }
 
 func refreshPackageList() {
@@ -123,10 +123,10 @@ func refreshPackageList() {
 	}
 	out = strings.Trim(out, "\n\t ")
 	newPkgs := make(map[App]bool)
-    for _, pkg := range strings.Split(out, "\n") {
+	for _, pkg := range strings.Split(out, "\n") {
 		pkg = strings.Split(pkg, ":")[1]
 		delim := strings.LastIndex(pkg, "=")
-		newPkgs[App{Name:fetchLabel(pkg[:delim]), Package: pkg[delim+1:]}] = true
+		newPkgs[App{Name: fetchLabel(pkg[:delim]), Package: pkg[delim+1:]}] = true
 	}
 	for pkg, _ := range pkgs {
 		if _, ok := newPkgs[pkg]; !ok {
