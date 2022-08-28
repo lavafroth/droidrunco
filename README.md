@@ -3,6 +3,33 @@ Your Android device. Cleaner.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/debloatplusplus)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
 
+## Introduction
+
+### What?
+
+`debloat++` is a cross-platform TUI application which utilizes `adb` and `aapt` to help the user
+remove unwanted system apps ([bloatware](https://en.wikipedia.org/wiki/Software_bloat)) from
+their android device without root access. The tool aids removal of such apps on all versions of
+Android with x86 or ARM processors. This subsequently increases storage space, reduces
+power consumption and hardens the user's privacy against vendor distributed spyware.
+
+### Why?
+
+Despite the existence of projects like [the UAD project](https://github.com/0x192/Universal-Android-Debloater),
+there has recently been a lot of trouble correlating package names with an app's label.
+Manufacturers including Oppo, Xiaomi and the like use obscure package names for their spyware
+apps which make it difficult if not impossible to remove them without playing Russian roulette
+and risking a [bootloop](https://en.wikipedia.org/wiki/Bootloop).
+
+### How?
+
+`deboat++` solves the aforementioned issue by fetching the package names as well as app labels
+using the `aapt` binaries. This can help the user get better insights on whether an app is
+safe to get rid of.
+
+With that being said, a user still runs the risk of hitting a bootloop if they have absolutely
+no idea of what they're doing.
+
 ## Installation
 
 ### Install ADB
