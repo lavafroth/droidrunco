@@ -61,18 +61,14 @@ Choose an OS:
 
   <details>
   <summary>macOS</summary>
-
-  - Install [Homebrew](https://brew.sh/#install)
-  - Install *Android platform tools*
+    Install [Homebrew](https://brew.sh/#install) and run the following in the terminal:
     ```bash
     brew install android-platform-tools
     ```
   </details>
   <details>
   <summary>Windows</summary>
-
-  - Install [Chocolatey](https://chocolatey.org/install#install-step2)
-  - Install adb
+    Install [Chocolatey](https://chocolatey.org/install#install-step2) and run the following in a PowerShell window with administrator privileges:
     ```powershell
     choco install adb
     ```
