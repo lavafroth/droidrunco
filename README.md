@@ -82,17 +82,28 @@ Choose an OS:
 
 `debloat++` can be installed in either of the following ways:
 
-- Download the binary for your operating system from the [releases](https://github.com/lavafroth/debloatplusplus/releases).
+#### Using precompiled binaries
+This is what most users will use since it does not involve setting up a development environment. Download the binary for your operating system from the [releases](https://github.com/lavafroth/debloatplusplus/releases).
 
-- If feeling adventurous, try
-  ```bash
-  go install github.com/lavafroth/debloatplusplus@latest
-  ```
+#### Using `go install`
+If feeling adventurous, try the following to fetch and compile the bleeding edge version of the code.
 
-- If you're a skeptic willing to inspect the code, clone the repository and in the project directory run
-  ```bash
-  go run .
-  ```
+```bash
+go install github.com/lavafroth/debloatplusplus@latest
+```
+
+#### For developers and tinkers
+If you're a skeptic willing to inspect or tinker with the code, clone the repository
+
+```bash
+git clone https://github.com/lavafroth/debloatplusplus.git
+```
+
+and in the project directory run
+
+```bash
+go run .
+```
 
 ## Usage
 - Kill any previously running adb servers on the host
