@@ -33,46 +33,23 @@ no idea of what they're doing.
 ## Installation
 
 ### Install ADB
-Choose an OS:
-<details>
-  <summary>Linux</summary>
-  
-  Debian:
-  ```bash
-  sudo apt install android-sdk-platform-tools
-  ```
+#### Linux
+- Debian: `sudo apt install android-sdk-platform-tools`
+- Arch: `sudo pacman -S android-tools`
+- Red Hat: `sudo yum install android-tools`
+- OpenSUSE: `sudo zypper install android-tools`
 
-  Arch:
-  ```bash
-  sudo pacman -S android-tools
-  ```
+#### macOS
+Install [Homebrew](https://brew.sh/#install) and run the following in the terminal:    
+```bash
+brew install android-platform-tools
+```
 
-  Red Hat:
-  ```bash
-  sudo yum install android-tools
-  ```
-
-  OpenSUSE:
-  ```bash
-  sudo zypper install android-tools
-  ```
-
-  </details>
-
-  <details>
-  <summary>macOS</summary>
-    Install [Homebrew](https://brew.sh/#install) and run the following in the terminal:
-    ```bash
-    brew install android-platform-tools
-    ```
-  </details>
-  <details>
-  <summary>Windows</summary>
-    Install [Chocolatey](https://chocolatey.org/install#install-step2) and run the following in a PowerShell window with administrator privileges:
-    ```powershell
-    choco install adb
-    ```
-  </details>
+#### Windows
+Install [Chocolatey](https://chocolatey.org/install#install-step2) and run the following in a PowerShell window with administrator privileges:
+```powershell
+choco install adb
+```
 
 ### Install `debloat++`
 
