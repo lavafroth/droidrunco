@@ -1,34 +1,41 @@
 package main
 
 import (
+	"html/template"
 	"embed"
 	"fmt"
 	"log"
 	"sort"
 	"strings"
 	"time"
+	"net/http"
 
-	"github.com/jroimartin/gocui"
+	"github.com/gin-gonic/gin"
 	adb "github.com/zach-klippenstein/goadb"
 )
 
 const aapt string = "/data/local/tmp/aapt"
 
 var searchQuery string
-var listing, searchBox, logView *gocui.View
 var device *adb.Device
 var pkgs map[string]*App
 var client *adb.Adb
-var selection int
 
 //go:embed aapt/*
 var binaries embed.FS
 
+//go:embed assets/* templates/*
+var web embed.FS
+
 type App struct {
-	Path    string
-	Package string
-	Label   string
-	Enabled bool
+	Path    string `json:"-"`
+	Package string `json:"pkg"`
+	Label   string `json:"label"`
+	Enabled bool   `json:"installed"`
+}
+
+type SearchQuery struct {
+	Query string `json:"query"`
 }
 
 type Apps []*App
@@ -112,28 +119,44 @@ func main() {
 		}
 	}()
 
-	g, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		log.Fatalf("failed to create new console ui: %q", err)
-	}
-	defer g.Close()
+	r := gin.Default()
+	templ := template.Must(template.New("").ParseFS(web, "templates/*.html"))
+	r.SetHTMLTemplate(templ)
+	r.StaticFS("/public", http.FS(web))
+	r.POST("/apps", func(c *gin.Context) {
+		var queryApp SearchQuery
+		c.BindJSON(&queryApp)
 
-	g.SetManagerFunc(layout)
+		var apps Apps
 
-	err = g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
-	if err != nil {
-		log.Fatalf(`failed to set "quit" keybind as ctrl + c: %q`, err)
-	}
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Fatal(err)
-	}
+		query := strings.ToLower(queryApp.Query)
+		for _, v := range pkgs {
+			if strings.Contains(strings.ToLower(v.Package), query) || strings.Contains(strings.ToLower(v.Label), query) {
+				apps = append(apps, v)
+			}
+		}
+		sort.Sort(apps)
+		c.JSON(200, gin.H{
+			"apps": apps,
+		})
+	})
+	r.POST("/do", func(c *gin.Context) {
+		var queryApp App
+		c.BindJSON(&queryApp)
+		toggleApp(pkgs[queryApp.Package])
+		c.JSON(200, gin.H{"status": "lol wtf"})
+	})
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{})
+	})
+	r.Run()
 }
 
 func worker(appChan, workChan chan *App) {
 	for app := range workChan {
 		out, err := device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, app.Path))
 		if err != nil {
-			fmt.Fprintf(logView, "failed to retrieve package label for apk at path %s: %q", app.Path, err)
+			log.Printf("failed to retrieve package label for apk at path %s: %q", app.Path, err)
 		}
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "application-label") {
@@ -191,126 +214,26 @@ func toggleApp(app *App) {
 	if app.Enabled {
 		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", app.Package))
 		if err != nil {
-			fmt.Fprintf(logView, "Failed to run uninstall command on %s: %q\n", app.String(), err)
+			log.Printf("Failed to run uninstall command on %s: %q\n", app.String(), err)
 			return
 		}
 		if !strings.Contains(out, "Success") {
-			fmt.Fprintf(logView, "Failed to uninstall %s\n", app.String())
+			log.Printf("Failed to uninstall %s\n", app.String())
 			return
 		}
-		fmt.Fprintf(logView, "Successfully uninstalled %s\n", app.String())
+		log.Printf("Successfully uninstalled %s\n", app.String())
 		app.Enabled = false
 		return
 	}
 	out, err := device.RunCommand(fmt.Sprintf("pm install-existing %s", app.Package))
 	if err != nil {
-		fmt.Fprintf(logView, "Failed to run reinstall command on %s: %q\n", app.String(), err)
+		log.Printf("Failed to run reinstall command on %s: %q\n", app.String(), err)
 		return
 	}
 	if !strings.Contains(out, "Success") {
-		fmt.Fprintf(logView, "Failed to reinstall %s\n", app.String())
+		log.Printf("Failed to reinstall %s\n", app.String())
 		return
 	}
-	fmt.Fprintf(logView, "Successfully reinstalled %s\n", app.String())
+	log.Printf("Successfully reinstalled %s\n", app.String())
 	app.Enabled = true
-}
-
-func search(query string) Apps {
-	var result Apps
-	query = strings.ToLower(strings.Trim(query, "\n\t "))
-	for _, app := range pkgs {
-		if strings.Contains(strings.ToLower(app.Label), query) || strings.Contains(strings.ToLower(app.Package), query) {
-			result = append(result, app)
-		}
-	}
-	sort.Sort(result)
-	return result
-}
-
-func refreshListing() {
-	listing.Clear()
-	apps := search(searchBox.Buffer())
-	appCount := len(apps) - 1
-	if selection > appCount {
-		selection = appCount
-	}
-	if selection < 0 {
-		selection = 0
-	}
-	listing.SetOrigin(0, selection)
-	for i, app := range apps {
-		switch {
-		case i == selection:
-			fmt.Fprintf(listing, "\x1b[36;1m%s\x1b[0m\n", app.String())
-		case len(pkgs) > 0 && !app.Enabled:
-			fmt.Fprintf(listing, "\x1b[31;4m%s\x1b[0m\n", app.String())
-		default:
-			fmt.Fprintln(listing, app.String())
-		}
-	}
-}
-
-func customEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
-	switch {
-	case ch != 0 && mod == 0:
-		v.EditWrite(ch)
-		selection = 0
-	case key == gocui.KeySpace:
-		v.EditWrite(' ')
-	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2:
-		v.EditDelete(true)
-	case key == gocui.KeyCtrlL:
-		v.Clear()
-		_, cy := v.Cursor()
-		v.SetCursor(1, cy)
-	case key == gocui.KeyDelete:
-		v.EditDelete(false)
-	case key == gocui.KeyInsert:
-		v.Overwrite = !v.Overwrite
-	case key == gocui.KeyArrowLeft:
-		v.MoveCursor(-1, 0, false)
-	case key == gocui.KeyArrowRight:
-		v.MoveCursor(1, 0, false)
-	case key == gocui.KeyArrowDown:
-		selection++
-	case key == gocui.KeyArrowUp:
-		selection--
-	case key == gocui.KeyEnter:
-		apps := search(searchBox.Buffer())
-		toggleApp(apps[selection])
-	}
-	refreshListing()
-}
-
-func layout(g *gocui.Gui) error {
-	var err error
-	X, Y := g.Size()
-	if listing, err = g.SetView("listing", 0, 3, X-1, int(4*Y/5)-1); err != nil && err != gocui.ErrUnknownView {
-		return err
-	}
-	listing.Wrap = true
-
-	if logView, err = g.SetView("logView", 0, int(4*Y/5), X-1, Y-1); err != nil && err != gocui.ErrUnknownView {
-		return err
-	}
-	logView.Wrap = true
-	logView.Autoscroll = true
-	logView.Title = " Logs "
-	if searchBox, err = g.SetView("searchBox", 0, 0, X-1, 2); err != nil && err != gocui.ErrUnknownView {
-		return err
-	}
-	searchBox.Title = " Search app / package "
-	searchBox.Editor = gocui.EditorFunc(customEditor)
-	searchBox.Editable = true
-	searchBox.Wrap = true
-	searchBox.Autoscroll = true
-
-	if _, err = g.SetCurrentView("searchBox"); err != nil {
-		return err
-	}
-	return nil
-}
-
-func quit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
 }
