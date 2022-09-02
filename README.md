@@ -86,7 +86,8 @@ adb kill-server
 - Backup the data on your device before you accidentally screw up
 - [Enable Developer Options and USB debugging on your device](https://developer.android.com/studio/debug/dev-options#enable)
 - From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
-- Run `droidrunco` and start typing to search for an app
-- Use the up / down arrow keys to select an app
-- Hit enter to wipe it off the face of your device
-- If an essential system app gets accidentally removed and `droidrunco` is still running, select the app (now marked in red) and hit enter again to restore it
+- Run `droidrunco` (this might need administrative rights depending on the operation system in use)
+- Visit http://localhost:8080
+- Start typing to search for an app
+- Click the trash icon next to the app's entry to wipe it
+- If an essential system app gets accidentally removed and `droidrunco` is still running, click the recycle icon next to the entry to restore it
