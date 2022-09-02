@@ -1,16 +1,17 @@
 package main
 
 import (
-	"html/template"
 	"embed"
 	"fmt"
-	"log"
+	"html/template"
+	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	adb "github.com/zach-klippenstein/goadb"
 )
 
@@ -110,20 +111,21 @@ func main() {
 	if strings.Contains(out, "not executable") {
 		log.Fatalf("Failed to execute aapt: %q", out)
 	}
-	fmt.Print("Initializing package entries ... ")
+	log.Info("Initializing package entries")
 	refreshPackageList()
-	fmt.Println("done.")
+	log.Info("Visit http://localhost:8080 to access the dashboard")
 	go func() {
 		for {
 			refreshPackageList()
 		}
 	}()
 
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	templ := template.Must(template.New("").ParseFS(web, "templates/*.html"))
 	r.SetHTMLTemplate(templ)
 	r.StaticFS("/public", http.FS(web))
-	r.POST("/apps", func(c *gin.Context) {
+	r.POST("/", func(c *gin.Context) {
 		var queryApp SearchQuery
 		c.BindJSON(&queryApp)
 
@@ -140,11 +142,11 @@ func main() {
 			"apps": apps,
 		})
 	})
-	r.POST("/do", func(c *gin.Context) {
+	r.PATCH("/", func(c *gin.Context) {
 		var queryApp App
 		c.BindJSON(&queryApp)
-		toggleApp(pkgs[queryApp.Package])
-		c.JSON(200, gin.H{"status": "lol wtf"})
+		status := toggle(pkgs[queryApp.Package])
+		c.JSON(200, gin.H{"status": status})
 	})
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{})
@@ -156,15 +158,17 @@ func worker(appChan, workChan chan *App) {
 	for app := range workChan {
 		out, err := device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, app.Path))
 		if err != nil {
-			log.Printf("failed to retrieve package label for apk at path %s: %q", app.Path, err)
+			log.WithFields(log.Fields{
+				"path": app.Path,
+			}).Warnf("Failed to retrieve package label: %q", err)
 		}
+
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "application-label") {
 				app.Label = line[19 : len(line)-1]
 				break
 			}
 		}
-
 		appChan <- app
 	}
 }
@@ -210,30 +214,64 @@ func refreshPackageList() {
 	pkgs = newPkgs
 }
 
-func toggleApp(app *App) {
+func toggle(app *App) string {
 	if app.Enabled {
 		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", app.Package))
 		if err != nil {
-			log.Printf("Failed to run uninstall command on %s: %q\n", app.String(), err)
-			return
+			trace := fmt.Sprintf("Failed to run uninstall command on %s: %q", app.String(), err)
+			log.Warn(trace)
+			return trace
 		}
 		if !strings.Contains(out, "Success") {
-			log.Printf("Failed to uninstall %s\n", app.String())
-			return
+			trace := fmt.Sprintf("Failed to uninstall %s", app.String())
+			log.Warn(trace)
+			return trace
 		}
-		log.Printf("Successfully uninstalled %s\n", app.String())
+
 		app.Enabled = false
-		return
+
+		trace := fmt.Sprintf("Successfully uninstalled %s", app.String())
+		log.Info(trace)
+		return trace
 	}
-	out, err := device.RunCommand(fmt.Sprintf("pm install-existing %s", app.Package))
+
+	pathRe := regexp.MustCompile("path: (?P<path>.*.apk)")
+	groupNames := pathRe.SubexpNames()
+	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", app.Package))
 	if err != nil {
-		log.Printf("Failed to run reinstall command on %s: %q\n", app.String(), err)
-		return
+		trace := fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", app.String(), err)
+		log.Warn(trace)
+		return trace
+	}
+	path := ""
+	for i, group := range pathRe.FindAllStringSubmatch(out, -1)[0] {
+		if groupNames[i] == "path" {
+			path = group
+			break
+		}
+	}
+
+	if path == "" {
+		trace := fmt.Sprintf("Failed to find package path for %s: %q", app.String(), err)
+		log.Warn(trace)
+		return trace
+	}
+
+	out, err = device.RunCommand(fmt.Sprintf("pm install -r --user 0 %s", path))
+	if err != nil {
+		trace := fmt.Sprintf("Failed to run reinstall command on %s: %q", app.String(), err)
+		log.Warn(trace)
+		return trace
 	}
 	if !strings.Contains(out, "Success") {
-		log.Printf("Failed to reinstall %s\n", app.String())
-		return
+		trace := fmt.Sprintf("Failed to reinstall %s", app.String())
+		log.Warn(trace)
+		return trace
 	}
-	log.Printf("Successfully reinstalled %s\n", app.String())
+
 	app.Enabled = true
+
+	trace := fmt.Sprintf("Successfully reinstalled %s", app.String())
+	log.Info(trace)
+	return trace
 }

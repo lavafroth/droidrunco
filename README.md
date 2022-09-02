@@ -1,13 +1,13 @@
-# `debloat++`
+# `droidrunco`
 Your Android device. Cleaner.
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/debloatplusplus)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
+[![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/droidrunco)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
 
 ## Introduction
 
 ### What?
 
-`debloat++` is a cross-platform TUI application which utilizes `adb` and `aapt` to help the user
+`droidrunco` is a cross-platform TUI application which utilizes `adb` and `aapt` to help the user
 remove unwanted system apps ([bloatware](https://en.wikipedia.org/wiki/Software_bloat)) from
 their android device without root access. The tool aids removal of such apps on all versions of
 Android with x86 or ARM processors. This subsequently increases storage space, reduces
@@ -23,7 +23,7 @@ and risking a [bootloop](https://en.wikipedia.org/wiki/Bootloop).
 
 ### How?
 
-`deboat++` solves the aforementioned issue by fetching the package names as well as app labels
+`droidrunco` solves the aforementioned issue by fetching the package names as well as app labels
 using the `aapt` binaries. This can help the user get better insights on whether an app is
 safe to get rid of.
 
@@ -51,25 +51,25 @@ Install [Chocolatey](https://chocolatey.org/install#install-step2) and run the f
 choco install adb
 ```
 
-### Install `debloat++`
+### Install `droidrunco`
 
-`debloat++` can be installed in either of the following ways:
+`droidrunco` can be installed in either of the following ways:
 
 #### Using precompiled binaries
-This is what most users will use since it does not involve setting up a development environment. Download the binary for your operating system from the [releases](https://github.com/lavafroth/debloatplusplus/releases).
+This is what most users will use since it does not involve setting up a development environment. Download the binary for your operating system from the [releases](https://github.com/lavafroth/droidrunco/releases).
 
 #### Using `go install`
 If feeling adventurous, try the following to fetch and compile the bleeding edge version of the code.
 
 ```bash
-go install github.com/lavafroth/debloatplusplus@latest
+go install github.com/lavafroth/droidrunco@latest
 ```
 
 #### For developers and tinkers
 If you're a skeptic willing to inspect or tinker with the code, clone the repository
 
 ```bash
-git clone https://github.com/lavafroth/debloatplusplus.git
+git clone https://github.com/lavafroth/droidrunco.git
 ```
 
 and in the project directory run
@@ -86,9 +86,7 @@ adb kill-server
 - Backup the data on your device before you accidentally screw up
 - [Enable Developer Options and USB debugging on your device](https://developer.android.com/studio/debug/dev-options#enable)
 - From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
-- Run `debloatplusplus` and start typing to search for an app
+- Run `droidrunco` and start typing to search for an app
 - Use the up / down arrow keys to select an app
 - Hit enter to wipe it off the face of your device
-- If an essential system app gets accidentally removed and `debloatplusplus` is still running, select the app (now marked in red) and hit enter again to restore it
-
-[![asciicast](https://asciinema.org/a/511965.svg)](https://asciinema.org/a/511965)
+- If an essential system app gets accidentally removed and `droidrunco` is still running, select the app (now marked in red) and hit enter again to restore it
