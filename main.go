@@ -25,7 +25,7 @@ var client *adb.Adb
 //go:embed aapt/*
 var binaries embed.FS
 
-//go:embed assets/* templates/*
+//go:embed templates/*
 var web embed.FS
 
 type App struct {
@@ -124,7 +124,6 @@ func main() {
 	r := gin.Default()
 	templ := template.Must(template.New("").ParseFS(web, "templates/*.html"))
 	r.SetHTMLTemplate(templ)
-	r.StaticFS("/public", http.FS(web))
 	r.POST("/", func(c *gin.Context) {
 		var queryApp SearchQuery
 		c.BindJSON(&queryApp)
