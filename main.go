@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -15,11 +16,31 @@ import (
 	adb "github.com/zach-klippenstein/goadb"
 )
 
+type App struct {
+	Description string `json:"description"`
+	Path        string `json:"-"`
+	Package     string `json:"pkg"`
+	Label       string `json:"label"`
+	Enabled     bool   `json:"enabled"`
+	HasLabel    bool   `json:"-"`
+	Removal     string `json:"removal"`
+}
+
+type Knowledge struct {
+	Package string `json:"id"`
+	Description string `json:"description"`
+	Removal     string `json:"removal"`
+}
+
+type Apps []*App
+type KnowledgeBase []*Knowledge
+
 const aapt string = "/data/local/tmp/aapt"
 
 var searchQuery string
 var device *adb.Device
-var pkgs map[string]*App
+var pkgs Apps
+var knowledgeBase KnowledgeBase
 var client *adb.Adb
 
 //go:embed aapt/*
@@ -28,21 +49,31 @@ var binaries embed.FS
 //go:embed templates/*
 var web embed.FS
 
-type App struct {
-	Path    string `json:"-"`
-	Package string `json:"pkg"`
-	Label   string `json:"label"`
-	Enabled bool   `json:"installed"`
+//go:embed knowledge.json
+var rawKnowledge []byte
+
+func (apps KnowledgeBase) WithPackageName(pkg string) *Knowledge {
+	for _, app := range apps {
+		if app.Package == pkg {
+			return app
+
+		}
+	}
+	return nil
 }
 
-type SearchQuery struct {
-	Query string `json:"query"`
+func (apps Apps) WithPackageName(pkg string) *App {
+	for _, app := range apps {
+		if app.Package == pkg {
+			return app
+
+		}
+	}
+	return nil
 }
 
-type Apps []*App
-
-func (app *App) String() string {
-	if len(app.Label) > 0 {
+func (app App) String() string {
+	if app.HasLabel {
 		return fmt.Sprintf("%s (%s)", app.Label, app.Package)
 	}
 	return app.Package
@@ -53,7 +84,23 @@ func (apps Apps) Len() int {
 }
 
 func (apps Apps) Less(i, j int) bool {
-	return strings.Compare(apps[i].String(), apps[j].String()) < 0
+	I, J := apps[i], apps[j]
+
+	// Handle the exclusive cases where one app
+	// has a label while the other does not.
+	if I.HasLabel && !J.HasLabel {
+		return true
+	}
+	if !I.HasLabel && J.HasLabel {
+		return false
+	}
+
+	// By now, either both the apps will have labels
+	// or none of them do.
+	if I.HasLabel {
+		return strings.Compare(I.Label, J.Label) < 0
+	}
+	return strings.Compare(I.Package, J.Package) < 0
 }
 
 func (apps Apps) Swap(i, j int) {
@@ -79,7 +126,10 @@ func push(local, remote string) error {
 func main() {
 	var err error
 
-	pkgs = make(map[string]*App)
+	if err := json.Unmarshal(rawKnowledge, &knowledgeBase); err != nil {
+		log.Fatalln(err)
+	}
+
 	client, err = adb.NewWithConfig(adb.ServerConfig{
 		Port: 6000,
 	})
@@ -125,14 +175,22 @@ func main() {
 	templ := template.Must(template.New("").ParseFS(web, "templates/*.html"))
 	r.SetHTMLTemplate(templ)
 	r.POST("/", func(c *gin.Context) {
-		var queryApp SearchQuery
-		c.BindJSON(&queryApp)
+		var app App
+		c.BindJSON(&app)
+		query := strings.ToLower(app.Package)
 
 		var apps Apps
-
-		query := strings.ToLower(queryApp.Query)
 		for _, v := range pkgs {
 			if strings.Contains(strings.ToLower(v.Package), query) || strings.Contains(strings.ToLower(v.Label), query) {
+				if k := knowledgeBase.WithPackageName(v.Package); k != nil {
+					v.Description = k.Description
+					v.Removal = k.Removal
+				}
+
+				if v.Description == "" {
+					v.Description = "Description not yet available."
+				}
+				
 				apps = append(apps, v)
 			}
 		}
@@ -144,7 +202,7 @@ func main() {
 	r.PATCH("/", func(c *gin.Context) {
 		var queryApp App
 		c.BindJSON(&queryApp)
-		status := toggle(pkgs[queryApp.Package])
+		status := toggle(pkgs.WithPackageName(queryApp.Package))
 		c.JSON(200, gin.H{"status": status})
 	})
 	r.GET("/", func(c *gin.Context) {
@@ -165,6 +223,7 @@ func worker(appChan, workChan chan *App) {
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "application-label") {
 				app.Label = line[19 : len(line)-1]
+				app.HasLabel = true
 				break
 			}
 		}
@@ -178,7 +237,7 @@ func refreshPackageList() {
 		log.Fatalf("failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
-	newPkgs := make(map[string]*App)
+	var newPkgs Apps
 	appChan := make(chan *App)
 	workChan := make(chan *App, 8)
 	for i := 0; i < 8; i++ {
@@ -187,27 +246,27 @@ func refreshPackageList() {
 	lines := strings.Split(out, "\n")
 	newPkgCount := len(lines)
 	go func() {
-		for _, line := range lines {
-			pkg := strings.Split(line, ":")[1]
-			delim := strings.LastIndex(pkg, "=")
-			path := pkg[:delim]
-			packageName := pkg[delim+1:]
-			if app, ok := pkgs[packageName]; ok {
-				newPkgs[packageName] = app
-				newPkgCount--
-				continue
-			}
-			workChan <- &App{Package: packageName, Path: path, Enabled: true}
+		for ; newPkgCount > 0; newPkgCount-- {
+			newPkgs = append(newPkgs, <-appChan)
 		}
 	}()
-	for ; newPkgCount > 0; newPkgCount-- {
-		app := <-appChan
-		newPkgs[app.Package] = app
+
+	for _, line := range lines {
+		line := strings.Split(line, ":")[1]
+		delim := strings.LastIndex(line, "=")
+		path, pkg := line[:delim], line[delim+1:]
+		if app := pkgs.WithPackageName(pkg); app != nil {
+			newPkgs = append(newPkgs, app)
+			newPkgCount--
+			continue
+		}
+		workChan <- &App{Package: pkg, Path: path, Enabled: true}
 	}
-	for pkg, app := range pkgs {
-		if _, ok := newPkgs[pkg]; !ok {
+
+	for _, app := range pkgs {
+		if newPkgs.WithPackageName(app.Package) == nil {
 			app.Enabled = false
-			newPkgs[pkg] = app
+			newPkgs = append(newPkgs, app)
 		}
 	}
 	pkgs = newPkgs
