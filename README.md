@@ -7,7 +7,7 @@ Your Android device. Cleaner.
 
 ### What?
 
-`droidrunco` is a cross-platform TUI application which utilizes `adb` and `aapt` to help the user
+`droidrunco` is a cross-platform web UI based application which utilizes `adb` and `aapt` to help the user
 remove unwanted system apps ([bloatware](https://en.wikipedia.org/wiki/Software_bloat)) from
 their android device without root access. The tool aids removal of such apps on all versions of
 Android with x86 or ARM processors. This subsequently increases storage space, reduces
