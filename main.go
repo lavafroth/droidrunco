@@ -49,6 +49,9 @@ var binaries embed.FS
 //go:embed templates/*
 var web embed.FS
 
+//go:embed assets/*
+var assets embed.FS
+
 //go:embed knowledge.json
 var rawKnowledge []byte
 
@@ -174,6 +177,7 @@ func main() {
 	r := gin.Default()
 	templ := template.Must(template.New("").ParseFS(web, "templates/*.html"))
 	r.SetHTMLTemplate(templ)
+	r.StaticFS("/public", http.FS(assets))
 	r.POST("/", func(c *gin.Context) {
 		var app App
 		c.BindJSON(&app)

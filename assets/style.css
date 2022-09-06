@@ -1,0 +1,30 @@
+.accordion-button:not(.collapsed), .accordion-button:link, .accordion-button:visited, .accordion-button:hover, .accordion-button:active, .accordion-button:focus {
+  color: #000 !important;
+  background-color: #fff !important;
+  text-decoration: none !important;
+  box-shadow: 0px !important;
+  z-index: 3;
+  box-shadow: 0 0 0 0 #FFF !important;
+}
+.accordion-button {
+        display:block;
+}
+.accordion-header {
+        display:flex;
+}
+.rbtn {
+float:right;
+}
+.accordion {
+overflow:scroll;
+height:calc(100vh - 7rem);
+-ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.accordion::-webkit-scrollbar {
+  display: none;
+}
+.accordion-button {
+overflow-wrap: anywhere;
+}
+

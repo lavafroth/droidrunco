@@ -6626,7 +6626,7 @@
   {
     "id": "com.android.htmlviewer",
     "list": "Aosp",
-    "description": "Allows apps to load URLs into the WebView, which allows web content to be displayed directly in the app..\nWARNING: Removing this causes a bootloop on some MIUI 12.5.4+ phones.",
+    "description": "Allows apps to load URLs into the WebView, which allows web content to be displayed directly in the app.\nWARNING: Removing this causes a bootloop on some MIUI 12.5.4+ phones.",
     "dependencies": null,
     "neededBy": null,
     "labels": null,
@@ -13574,7 +13574,7 @@
   {
     "id": "com.qualcomm.location",
     "list": "Misc",
-    "description": "LocationServices\nRuns in the background as part of the system. Runs even if disabled, so probably pointless to disable.\nPeriodically sends a unique software ID, location (lat, long, alt, and their uncertainty), nearby cellular towers and Wi-Fi hotspots and their signal strength to Qualcomm servers.\nhttps://www.qualcomm.com/site/privacy/services",
+    "description": "Runs in the background as part of the system. Runs even if disabled, so probably pointless to disable.\nPeriodically sends a unique software ID, location (lat, long, alt, and their uncertainty), nearby cellular towers and Wi-Fi hotspots and their signal strength to Qualcomm servers.\nhttps://www.qualcomm.com/site/privacy/services",
     "dependencies": null,
     "neededBy": null,
     "labels": null,
@@ -17885,7 +17885,7 @@
   {
     "id": "com.google.android.captiveportallogin",
     "list": "Google",
-    "description": "Support for captive portal : https://en.wikipedia.org/wiki/Captive_portal\nA captive portal login is a web page where the users have to input their login information or accept the displayed terms of use. \nSome networks (typically public wifi network) use the captive portal login to block access until the user inputs \nsome necessary information\nNOTE : This package is a now a mandatory mainline module (https://www.xda-developers.com/android-project-mainline-modules-explanation/)\n",
+    "description": "Support for captive portal: https://en.wikipedia.org/wiki/Captive_portal\nA captive portal login is a web page where the users have to input their login information or accept the displayed terms of use. \nSome networks (typically public wifi network) use the captive portal login to block access until the user inputs \nsome necessary information\nNOTE : This package is a now a mandatory mainline module (https://www.xda-developers.com/android-project-mainline-modules-explanation/)",
     "dependencies": null,
     "neededBy": null,
     "labels": null,
@@ -19550,7 +19550,7 @@
   {
     "id": "android",
     "list": "Aosp",
-    "description": "Android System\nAndroid system framework? Apk file name: framework-res\nCould be THE core of the android system.\nProbably very unsafe to disable.",
+    "description": "Android system framework. Apk file name: framework-res\nCould be THE core of the android system.\nProbably very unsafe to disable.",
     "dependencies": null,
     "neededBy": null,
     "labels": null,
