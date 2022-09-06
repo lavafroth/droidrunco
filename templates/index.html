@@ -75,21 +75,31 @@ function search() {
         contentType: 'application/json',
         method: 'POST',
         data: JSON.stringify({
-            "query": $('#search').val().toLowerCase()
+            "pkg": $('#search').val().toLowerCase()
         }),
         success: function(data) {
             var entries = []
             data['apps'].map(function(app) {
                 var ID = app.pkg.replaceAll('.', '');
-                var icon = app.installed ? trash_icon : recycle_icon;
+                var icon = app.enabled ? trash_icon : recycle_icon;
                 var show = ID == extended ? ' show' : '';
+		var color = 'secondary';
+			if (app.removal == "Recommended") {
+					color = 'success';
+			} else if (app.removal == "Advanced") {
+					color = 'primary';
+			} else if (app.removal == "Expert") {
+				color = "warning";
+			} else if (app.removal == "Unsafe") {
+				color = "danger";
+			}
                 entries.push(`<div class="accordion-item">
         <h2 class="accordion-header" id="heading${ID}">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${ID}" aria-expanded="true" aria-controls="collapse${ID}" onclick="accordion('${ID}')">
                 <h5 class="mb-1">${app.label}</h5>
                         ${app.pkg}
                 </button>
-                <button type="button" id="button${ID}" class="btn btn-outline-secondary m-1 rbtn" onclick="toggle('${app.pkg}')">
+       <button type="button" id="button${ID}" class="btn btn-outline-${color} m-1 rbtn" onclick="toggle('${app.pkg}')">
                 ${icon}
                 </button>
         </h2>
