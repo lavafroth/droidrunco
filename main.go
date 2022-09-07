@@ -4,32 +4,31 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"html/template"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	adb "github.com/zach-klippenstein/goadb"
 )
 
-type App struct {
+type Knowledge struct {
+	Package     string `json:"id"`
 	Description string `json:"description"`
-	Path        string `json:"-"`
-	Package     string `json:"pkg"`
-	Label       string `json:"label"`
-	Enabled     bool   `json:"enabled"`
-	HasLabel    bool   `json:"-"`
 	Removal     string `json:"removal"`
 }
 
-type Knowledge struct {
-	Package string `json:"id"`
+type App struct {
+	Package     string `json:"pkg"`
 	Description string `json:"description"`
 	Removal     string `json:"removal"`
+	Path     string `json:"-"`
+	Label    string `json:"label"`
+	Enabled  bool   `json:"enabled"`
+	HasLabel bool   `json:"-"`
 }
 
 type Apps []*App
@@ -46,8 +45,8 @@ var client *adb.Adb
 //go:embed aapt/*
 var binaries embed.FS
 
-//go:embed templates/*
-var web embed.FS
+//go:embed templates/index.html
+var index []byte
 
 //go:embed assets/*
 var assets embed.FS
@@ -74,6 +73,8 @@ func (apps Apps) WithPackageName(pkg string) *App {
 	}
 	return nil
 }
+
+
 
 func (app App) String() string {
 	if app.HasLabel {
@@ -126,6 +127,50 @@ func push(local, remote string) error {
 	return nil
 }
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		var app App
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		json.Unmarshal(requestBody, &app)
+		query := strings.ToLower(app.Package)
+
+		var apps Apps
+		for _, v := range pkgs {
+			if strings.Contains(strings.ToLower(v.Package), query) || strings.Contains(strings.ToLower(v.Label), query) {
+				apps = append(apps, v)
+			}
+		}
+		sort.Sort(apps)
+		response, err := json.Marshal(apps)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(response)
+	case http.MethodGet:
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		w.Write(index)
+	case http.MethodPatch:
+		var app App
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		json.Unmarshal(requestBody, &app)
+
+		response, err := json.Marshal(map[string]string{"status": toggle(pkgs.WithPackageName(app.Package))})
+		if err != nil {
+			log.Fatalln(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(response)
+	}
+}
+
 func main() {
 	var err error
 
@@ -166,53 +211,18 @@ func main() {
 	}
 	log.Info("Initializing package entries")
 	refreshPackageList()
-	log.Info("Visit http://localhost:8080 to access the dashboard")
 	go func() {
 		for {
 			refreshPackageList()
 		}
 	}()
+	http.Handle("/public/", http.StripPrefix(strings.TrimRight("/public/", "/"), http.FileServer(http.FS(assets))))
+	
+	http.HandleFunc("/", handler)
 
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.Default()
-	templ := template.Must(template.New("").ParseFS(web, "templates/*.html"))
-	r.SetHTMLTemplate(templ)
-	r.StaticFS("/public", http.FS(assets))
-	r.POST("/", func(c *gin.Context) {
-		var app App
-		c.BindJSON(&app)
-		query := strings.ToLower(app.Package)
+	log.Info("Visit http://localhost:8080 to access the dashboard")
 
-		var apps Apps
-		for _, v := range pkgs {
-			if strings.Contains(strings.ToLower(v.Package), query) || strings.Contains(strings.ToLower(v.Label), query) {
-				if k := knowledgeBase.WithPackageName(v.Package); k != nil {
-					v.Description = k.Description
-					v.Removal = k.Removal
-				}
-
-				if v.Description == "" {
-					v.Description = "Description not yet available."
-				}
-				
-				apps = append(apps, v)
-			}
-		}
-		sort.Sort(apps)
-		c.JSON(200, gin.H{
-			"apps": apps,
-		})
-	})
-	r.PATCH("/", func(c *gin.Context) {
-		var queryApp App
-		c.BindJSON(&queryApp)
-		status := toggle(pkgs.WithPackageName(queryApp.Package))
-		c.JSON(200, gin.H{"status": status})
-	})
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{})
-	})
-	r.Run()
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func worker(appChan, workChan chan *App) {
@@ -251,7 +261,17 @@ func refreshPackageList() {
 	newPkgCount := len(lines)
 	go func() {
 		for ; newPkgCount > 0; newPkgCount-- {
-			newPkgs = append(newPkgs, <-appChan)
+			app := <-appChan
+				if k := knowledgeBase.WithPackageName(app.Package); k != nil {
+					app.Description = k.Description
+					app.Removal = k.Removal
+				}
+
+				if app.Description == "" {
+					app.Description = "Description not yet available."
+				}
+
+			newPkgs = append(newPkgs, app)
 		}
 	}()
 

@@ -18,7 +18,7 @@ function search() {
         }),
         success: function(data) {
             var entries = []
-            data['apps'].map(function(app) {
+            data.map(function(app) {
                 var ID = app.pkg.replaceAll('.', '');
                 var icon = app.enabled ? trash_icon : recycle_icon;
                 var show = ID == extended ? ' show' : '';
