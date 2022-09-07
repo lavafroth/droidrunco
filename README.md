@@ -91,3 +91,6 @@ adb kill-server
 - Start typing to search for an app
 - Click the trash icon next to the app's entry to wipe it
 - If an essential system app gets accidentally removed and `droidrunco` is still running, click the recycle icon next to the entry to restore it
+
+## Video demo
+[![Demo thumbnail](https://i.ytimg.com/vi_webp/2ym1zA5J6L4/maxresdefault.webp)](https://www.youtube.com/watch?v=2ym1zA5J6L4)
