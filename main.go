@@ -4,7 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/lavafroth/droidrunco/app"
 	"net/http"
 	"regexp"
 	"sort"
@@ -15,31 +15,11 @@ import (
 	adb "github.com/zach-klippenstein/goadb"
 )
 
-type Knowledge struct {
-	Package     string `json:"id"`
-	Description string `json:"description"`
-	Removal     string `json:"removal"`
-}
-
-type App struct {
-	Package     string `json:"pkg"`
-	Description string `json:"description"`
-	Removal     string `json:"removal"`
-	Path     string `json:"-"`
-	Label    string `json:"label"`
-	Enabled  bool   `json:"enabled"`
-	HasLabel bool   `json:"-"`
-}
-
-type Apps []*App
-type KnowledgeBase []*Knowledge
-
 const aapt string = "/data/local/tmp/aapt"
 
-var searchQuery string
 var device *adb.Device
-var pkgs Apps
-var knowledgeBase KnowledgeBase
+var pkgs app.Apps
+var db app.MetaDB
 var client *adb.Adb
 
 //go:embed aapt/*
@@ -53,63 +33,6 @@ var assets embed.FS
 
 //go:embed knowledge.json
 var rawKnowledge []byte
-
-func (apps KnowledgeBase) WithPackageName(pkg string) *Knowledge {
-	for _, app := range apps {
-		if app.Package == pkg {
-			return app
-
-		}
-	}
-	return nil
-}
-
-func (apps Apps) WithPackageName(pkg string) *App {
-	for _, app := range apps {
-		if app.Package == pkg {
-			return app
-
-		}
-	}
-	return nil
-}
-
-
-
-func (app App) String() string {
-	if app.HasLabel {
-		return fmt.Sprintf("%s (%s)", app.Label, app.Package)
-	}
-	return app.Package
-}
-
-func (apps Apps) Len() int {
-	return len(apps)
-}
-
-func (apps Apps) Less(i, j int) bool {
-	I, J := apps[i], apps[j]
-
-	// Handle the exclusive cases where one app
-	// has a label while the other does not.
-	if I.HasLabel && !J.HasLabel {
-		return true
-	}
-	if !I.HasLabel && J.HasLabel {
-		return false
-	}
-
-	// By now, either both the apps will have labels
-	// or none of them do.
-	if I.HasLabel {
-		return strings.Compare(I.Label, J.Label) < 0
-	}
-	return strings.Compare(I.Package, J.Package) < 0
-}
-
-func (apps Apps) Swap(i, j int) {
-	apps[i], apps[j] = apps[j], apps[i]
-}
 
 func push(local, remote string) error {
 	localBytes, err := binaries.ReadFile("aapt/" + local)
@@ -130,22 +53,16 @@ func push(local, remote string) error {
 func handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		var app App
-		requestBody, err := ioutil.ReadAll(r.Body)
+		App, err := app.Unmarshal(r.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
-		json.Unmarshal(requestBody, &app)
-		query := strings.ToLower(app.Package)
-
-		var apps Apps
-		for _, v := range pkgs {
-			if strings.Contains(strings.ToLower(v.Package), query) || strings.Contains(strings.ToLower(v.Label), query) {
-				apps = append(apps, v)
-			}
+		filtered := pkgs.WithPackageOrLabel(strings.ToLower(App.Package))
+		sort.Sort(filtered)
+		response, err := json.Marshal(filtered)
+		if err != nil {
+			log.Fatal(err)
 		}
-		sort.Sort(apps)
-		response, err := json.Marshal(apps)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(response)
@@ -154,14 +71,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(index)
 	case http.MethodPatch:
-		var app App
-		requestBody, err := ioutil.ReadAll(r.Body)
+		App, err := app.Unmarshal(r.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
-		json.Unmarshal(requestBody, &app)
-
-		response, err := json.Marshal(map[string]string{"status": toggle(pkgs.WithPackageName(app.Package))})
+		response, err := json.Marshal(map[string]string{"status": toggle(pkgs.Get(App.Package))})
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -174,7 +88,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var err error
 
-	if err := json.Unmarshal(rawKnowledge, &knowledgeBase); err != nil {
+	if err := json.Unmarshal(rawKnowledge, &db); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -217,15 +131,12 @@ func main() {
 		}
 	}()
 	http.Handle("/public/", http.StripPrefix(strings.TrimRight("/public/", "/"), http.FileServer(http.FS(assets))))
-	
 	http.HandleFunc("/", handler)
-
 	log.Info("Visit http://localhost:8080 to access the dashboard")
-
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func worker(appChan, workChan chan *App) {
+func worker(appChan, workChan chan *app.App) {
 	for app := range workChan {
 		out, err := device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, app.Path))
 		if err != nil {
@@ -251,9 +162,9 @@ func refreshPackageList() {
 		log.Fatalf("failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
-	var newPkgs Apps
-	appChan := make(chan *App)
-	workChan := make(chan *App, 8)
+	var newPkgs app.Apps
+	appChan := make(chan *app.App)
+	workChan := make(chan *app.App, 8)
 	for i := 0; i < 8; i++ {
 		go worker(appChan, workChan)
 	}
@@ -262,14 +173,14 @@ func refreshPackageList() {
 	go func() {
 		for ; newPkgCount > 0; newPkgCount-- {
 			app := <-appChan
-				if k := knowledgeBase.WithPackageName(app.Package); k != nil {
-					app.Description = k.Description
-					app.Removal = k.Removal
-				}
+			if k := db.Get(app.Package); k != nil {
+				app.Description = k.Description
+				app.Removal = k.Removal
+			}
 
-				if app.Description == "" {
-					app.Description = "Description not yet available."
-				}
+			if app.Description == "" {
+				app.Description = "Description not yet available."
+			}
 
 			newPkgs = append(newPkgs, app)
 		}
@@ -279,16 +190,16 @@ func refreshPackageList() {
 		line := strings.Split(line, ":")[1]
 		delim := strings.LastIndex(line, "=")
 		path, pkg := line[:delim], line[delim+1:]
-		if app := pkgs.WithPackageName(pkg); app != nil {
+		if app := pkgs.Get(pkg); app != nil {
 			newPkgs = append(newPkgs, app)
 			newPkgCount--
 			continue
 		}
-		workChan <- &App{Package: pkg, Path: path, Enabled: true}
+		workChan <- &app.App{Meta: app.Meta{Package: pkg}, Path: path, Enabled: true}
 	}
 
 	for _, app := range pkgs {
-		if newPkgs.WithPackageName(app.Package) == nil {
+		if newPkgs.Get(app.Package) == nil {
 			app.Enabled = false
 			newPkgs = append(newPkgs, app)
 		}
@@ -296,32 +207,32 @@ func refreshPackageList() {
 	pkgs = newPkgs
 }
 
-func toggle(app *App) string {
-	if app.Enabled {
-		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", app.Package))
+func toggle(App *app.App) string {
+	if App.Enabled {
+		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", App.Package))
 		if err != nil {
-			trace := fmt.Sprintf("Failed to run uninstall command on %s: %q", app.String(), err)
+			trace := fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
 			log.Warn(trace)
 			return trace
 		}
 		if !strings.Contains(out, "Success") {
-			trace := fmt.Sprintf("Failed to uninstall %s", app.String())
+			trace := fmt.Sprintf("Failed to uninstall %s", App.String())
 			log.Warn(trace)
 			return trace
 		}
 
-		app.Enabled = false
+		App.Enabled = false
 
-		trace := fmt.Sprintf("Successfully uninstalled %s", app.String())
+		trace := fmt.Sprintf("Successfully uninstalled %s", App.String())
 		log.Info(trace)
 		return trace
 	}
 
 	pathRe := regexp.MustCompile("path: (?P<path>.*.apk)")
 	groupNames := pathRe.SubexpNames()
-	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", app.Package))
+	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", App.Package))
 	if err != nil {
-		trace := fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", app.String(), err)
+		trace := fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
 		log.Warn(trace)
 		return trace
 	}
@@ -334,26 +245,26 @@ func toggle(app *App) string {
 	}
 
 	if path == "" {
-		trace := fmt.Sprintf("Failed to find package path for %s: %q", app.String(), err)
+		trace := fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
 		log.Warn(trace)
 		return trace
 	}
 
 	out, err = device.RunCommand(fmt.Sprintf("pm install -r --user 0 %s", path))
 	if err != nil {
-		trace := fmt.Sprintf("Failed to run reinstall command on %s: %q", app.String(), err)
+		trace := fmt.Sprintf("Failed to run reinstall command on %s: %q", App.String(), err)
 		log.Warn(trace)
 		return trace
 	}
 	if !strings.Contains(out, "Success") {
-		trace := fmt.Sprintf("Failed to reinstall %s", app.String())
+		trace := fmt.Sprintf("Failed to reinstall %s", App.String())
 		log.Warn(trace)
 		return trace
 	}
 
-	app.Enabled = true
+	App.Enabled = true
 
-	trace := fmt.Sprintf("Successfully reinstalled %s", app.String())
+	trace := fmt.Sprintf("Successfully reinstalled %s", App.String())
 	log.Info(trace)
 	return trace
 }

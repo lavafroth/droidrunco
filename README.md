@@ -75,7 +75,7 @@ git clone https://github.com/lavafroth/droidrunco.git
 and in the project directory run
 
 ```bash
-go run .
+make
 ```
 
 ## Usage
