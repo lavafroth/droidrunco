@@ -1,5 +1,11 @@
-# `droidrunco`
+# droidrunco
 Your Android device. Cleaner.
+
+- [Introduction](https://github.com/lavafroth/droidrunco#Introduction)
+- [Installation](https://github.com/lavafroth/droidrunco#Installation)
+- [Usage](https://github.com/lavafroth/droidrunco#Usage)
+- [Demo](https://www.youtube.com/watch?v=2ym1zA5J6L4)
+- [Acknowledgement](https://github.com/lavafroth/droidrunco#Acknowledgement)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/droidrunco)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
 
@@ -78,7 +84,7 @@ and in the project directory run
 make
 ```
 
-## Usag
+## Usage
 - Backup the data on your device before you accidentally screw up
 - [Enable Developer Options and USB debugging on your device](https://developer.android.com/studio/debug/dev-options#enable)
 - From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
