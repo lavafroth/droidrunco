@@ -7,7 +7,7 @@ Your Android device. Cleaner.
 
 ### What?
 
-`droidrunco` is a cross-platform web UI based application which utilizes `adb` and `aapt` to help the user
+`droidrunco` is a cross-platform web UI based application which utilizes `adb` to help
 remove unwanted system apps ([bloatware](https://en.wikipedia.org/wiki/Software_bloat)) from
 their android device without root access. The tool aids removal of such apps on all versions of
 Android with x86 or ARM processors. This subsequently increases storage space, reduces
@@ -24,7 +24,7 @@ and risking a [bootloop](https://en.wikipedia.org/wiki/Bootloop).
 ### How?
 
 `droidrunco` solves the aforementioned issue by fetching the package names as well as app labels
-using the `aapt` binaries. This can help the user get better insights on whether an app is
+using its extractor binaries. This can help the user get better insights on whether an app is
 safe to get rid of.
 
 With that being said, a user still runs the risk of hitting a bootloop if they have absolutely

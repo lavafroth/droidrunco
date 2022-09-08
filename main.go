@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lavafroth/droidrunco/app"
+	"github.com/lavafroth/droidrunco/meta"
 	"net/http"
 	"regexp"
 	"sort"
@@ -15,14 +16,14 @@ import (
 	adb "github.com/zach-klippenstein/goadb"
 )
 
-const aapt string = "/data/local/tmp/aapt"
+const extractor string = "/data/local/tmp/extractor"
 
 var device *adb.Device
 var pkgs app.Apps
-var db app.MetaDB
+var db meta.DB
 var client *adb.Adb
 
-//go:embed aapt/*
+//go:embed extractor/build/*
 var binaries embed.FS
 
 //go:embed templates/index.html
@@ -31,11 +32,8 @@ var index []byte
 //go:embed assets/*
 var assets embed.FS
 
-//go:embed knowledge.json
-var rawKnowledge []byte
-
 func push(local, remote string) error {
-	localBytes, err := binaries.ReadFile("aapt/" + local)
+	localBytes, err := binaries.ReadFile("extractor/build/" + local)
 	if err != nil {
 		return fmt.Errorf("failed to read embedded file %s: %q", local, err)
 	}
@@ -58,7 +56,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		filtered := pkgs.WithPackageOrLabel(strings.ToLower(App.Package))
-		sort.Sort(filtered)
 		response, err := json.Marshal(filtered)
 		if err != nil {
 			log.Fatal(err)
@@ -87,9 +84,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var err error
-
-	if err := json.Unmarshal(rawKnowledge, &db); err != nil {
-		log.Fatalln(err)
+	db, err = meta.Init()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	client, err = adb.NewWithConfig(adb.ServerConfig{
@@ -111,17 +108,17 @@ func main() {
 		binary = "arm"
 	}
 
-	if err := push(binary, aapt); err != nil {
+	if err := push(binary, extractor); err != nil {
 		log.Fatal(err)
 	}
 	time.Sleep(1 * time.Second)
-	out, err = device.RunCommand(aapt)
+	out, err = device.RunCommand(extractor)
 	if err != nil {
-		log.Fatalf("failed to execute aapt: %q", err)
+		log.Fatalf("failed to execute extractor: %q", err)
 	}
 
 	if strings.Contains(out, "not executable") {
-		log.Fatalf("Failed to execute aapt: %q", out)
+		log.Fatalf("Failed to execute extractor: %q", out)
 	}
 	log.Info("Initializing package entries")
 	refreshPackageList()
@@ -136,23 +133,24 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func worker(appChan, workChan chan *app.App) {
-	for app := range workChan {
-		out, err := device.RunCommand(fmt.Sprintf("%s d badging %s", aapt, app.Path))
+func worker(work chan *app.App) {
+	for app := range work{
+		label, err := device.RunCommand(fmt.Sprintf("%s %s", extractor, app.Path))
 		if err != nil {
 			log.WithFields(log.Fields{
 				"path": app.Path,
 			}).Warnf("Failed to retrieve package label: %q", err)
 		}
 
-		for _, line := range strings.Split(out, "\n") {
-			if strings.Contains(line, "application-label") {
-				app.Label = line[19 : len(line)-1]
-				app.HasLabel = true
-				break
-			}
+		app.SetLabel(strings.Trim(label, "\n"))
+
+		if k := db.Get(app.Package); k != nil {
+			app.Meta = *k
 		}
-		appChan <- app
+
+		if app.Description == "" {
+			app.Description = "Description not yet available."
+		}
 	}
 }
 
@@ -162,49 +160,32 @@ func refreshPackageList() {
 		log.Fatalf("failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
-	var newPkgs app.Apps
-	appChan := make(chan *app.App)
+	var fresh app.Apps
 	workChan := make(chan *app.App, 8)
 	for i := 0; i < 8; i++ {
-		go worker(appChan, workChan)
+		go worker(workChan)
 	}
-	lines := strings.Split(out, "\n")
-	newPkgCount := len(lines)
-	go func() {
-		for ; newPkgCount > 0; newPkgCount-- {
-			app := <-appChan
-			if k := db.Get(app.Package); k != nil {
-				app.Description = k.Description
-				app.Removal = k.Removal
-			}
 
-			if app.Description == "" {
-				app.Description = "Description not yet available."
-			}
-
-			newPkgs = append(newPkgs, app)
-		}
-	}()
-
-	for _, line := range lines {
+	for _, line := range strings.Split(out, "\n") {
 		line := strings.Split(line, ":")[1]
 		delim := strings.LastIndex(line, "=")
 		path, pkg := line[:delim], line[delim+1:]
-		if app := pkgs.Get(pkg); app != nil {
-			newPkgs = append(newPkgs, app)
-			newPkgCount--
-			continue
+		var App *app.App
+		if App = pkgs.Get(pkg); App == nil {
+			App = &app.App{Meta: meta.Meta{Package: pkg}, Path: path, Enabled: true}
+			workChan <- App
 		}
-		workChan <- &app.App{Meta: app.Meta{Package: pkg}, Path: path, Enabled: true}
+		fresh = append(fresh, App)
 	}
 
 	for _, app := range pkgs {
-		if newPkgs.Get(app.Package) == nil {
+		if fresh.Get(app.Package) == nil {
 			app.Enabled = false
-			newPkgs = append(newPkgs, app)
+			fresh = append(fresh, app)
 		}
 	}
-	pkgs = newPkgs
+	sort.Sort(fresh)
+	pkgs = fresh
 }
 
 func toggle(App *app.App) string {
