@@ -65,7 +65,7 @@ If feeling adventurous, try the following to fetch and compile the bleeding edge
 go install github.com/lavafroth/droidrunco@latest
 ```
 
-#### For developers and tinkers
+#### For developers and tinkerers
 If you're a skeptic willing to inspect or tinker with the code, clone the repository
 
 ```bash
