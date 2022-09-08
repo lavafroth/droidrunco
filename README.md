@@ -9,9 +9,9 @@ Your Android device. Cleaner.
 
 `droidrunco` is a cross-platform web UI based application which utilizes `adb` to help
 remove unwanted system apps ([bloatware](https://en.wikipedia.org/wiki/Software_bloat)) from
-their android device without root access. The tool aids removal of such apps on all versions of
-Android with x86 or ARM processors. This subsequently increases storage space, reduces
-power consumption and hardens the user's privacy against vendor distributed spyware.
+on all versions of Android with x86 or ARM processors without root access. This subsequently
+increases storage space, reduces power consumption and hardens the user's privacy against
+vendor distributed spyware.
 
 ### Why?
 
@@ -78,19 +78,27 @@ and in the project directory run
 make
 ```
 
-## Usage
+## Usag
+- Backup the data on your device before you accidentally screw up
+- [Enable Developer Options and USB debugging on your device](https://developer.android.com/studio/debug/dev-options#enable)
+- From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
 - Kill any previously running adb servers on the host
 ```
 adb kill-server
 ```
-- Backup the data on your device before you accidentally screw up
-- [Enable Developer Options and USB debugging on your device](https://developer.android.com/studio/debug/dev-options#enable)
-- From the settings, disconnect from any OEM / vendor accounts (deleting an OEM account package could lock you on the lockscreen because the device can no longer associate your identity)
 - Run `droidrunco` (this might need administrative rights depending on the operation system in use)
 - Visit http://localhost:8080
 - Start typing to search for an app
-- Click the trash icon next to the app's entry to wipe it
+- Click the trash icon next to the app's entry to wipe it. The icon color indicated the severity of uninstalling the app.
+  - Green: Recommended
+  - Blue: Advanced
+  - Yellow: Expert
+  - Red: Unsafe
+  - Gray: Untested
 - If an essential system app gets accidentally removed and `droidrunco` is still running, click the recycle icon next to the entry to restore it
 
 ## Video demo
 [![Demo thumbnail](https://i.ytimg.com/vi_webp/2ym1zA5J6L4/maxresdefault.webp)](https://www.youtube.com/watch?v=2ym1zA5J6L4)
+
+## Acknowledgement
+A huge thank you to [the UAD project](https://github.com/0x192/Universal-Android-Debloater) for their application knowledge base that is used in this project.
