@@ -96,8 +96,13 @@ adb kill-server
   - Gray: Untested
 - If an essential system app gets accidentally removed and `droidrunco` is still running, click the recycle icon next to the entry to restore it
 
-## Video demo
+## Video demos
+
+### Using an external computer
 [![Demo thumbnail](https://i.ytimg.com/vi_webp/2ym1zA5J6L4/maxresdefault.webp)](https://www.youtube.com/watch?v=2ym1zA5J6L4)
+
+### Using wireless debugging (experimental)
+[![Experimental demo thumbnail](https://i.ytimg.com/vi_webp/MvKOLXBYuO0/maxresdefault.webp)](https://www.youtube.com/watch?v=MvKOLXBYuO0)
 
 ## Acknowledgement
 A huge thank you to [the UAD project](https://github.com/0x192/Universal-Android-Debloater) for their application knowledge base that is used in this project.
