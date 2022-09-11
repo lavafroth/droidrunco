@@ -39,7 +39,9 @@ function search() {
                 entries.push(`<div class="accordion-item">
         <h2 class="accordion-header" id="heading${ID}">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${ID}" aria-expanded="true" aria-controls="collapse${ID}" onclick="accordion('${ID}')">
-                <h5 class="mb-1">${app.label}</h5>
+                <h5 class="mb-1">${app.label}
+			<span class="badge badge-secondary">${app.list}</span>
+		</h5>
                         ${app.pkg}
                 </button>
        <button type="button" id="button${ID}" class="btn btn-outline-${color} m-1 rbtn" onclick="toggle('${app.pkg}')">

@@ -44,6 +44,7 @@ no idea of what they're doing.
 - Arch: `sudo pacman -S android-tools`
 - Red Hat: `sudo yum install android-tools`
 - OpenSUSE: `sudo zypper install android-tools`
+- Termux: `pkg in android-tools`
 
 #### macOS
 Install [Homebrew](https://brew.sh/#install) and run the following in the terminal:    

@@ -12,6 +12,7 @@ type Meta struct {
 	Package     string `json:"pkg"`
 	Description string `json:"description"`
 	Removal     string `json:"removal"`
+	List string `json:"list"`
 }
 
 type DB []*Meta
