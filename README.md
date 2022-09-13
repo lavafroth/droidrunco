@@ -4,7 +4,7 @@ Your Android device. Cleaner.
 - [Introduction](https://github.com/lavafroth/droidrunco#Introduction)
 - [Installation](https://github.com/lavafroth/droidrunco#Installation)
 - [Usage](https://github.com/lavafroth/droidrunco#Usage)
-- [Demo](https://www.youtube.com/watch?v=2ym1zA5J6L4)
+- [Demo](https://odysee.com/@lavafroth:d/droidrunco_wireless_debugging:d)
 - [Acknowledgement](https://github.com/lavafroth/droidrunco#Acknowledgement)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/lavafroth/droidrunco)](https://goreportcard.com/report/github.com/lavafroth/debloatplusplus)
@@ -96,6 +96,11 @@ adb kill-server
   - Red: Unsafe
   - Gray: Untested
 - If an essential system app gets accidentally removed and `droidrunco` is still running, click the recycle icon next to the entry to restore it
+
+## Demo
+
+### Android 11+ Wireless Debugging Demo
+[![Wireless debugging demo](https://thumbnails.odycdn.com/optimize/s:390:220/quality:85/plain/https://thumbs.odycdn.com/4ef7eae22541fbad110039f5b7ba3a14.webp)](https://odysee.com/@lavafroth:d/droidrunco_wireless_debugging:d)
 
 ## Acknowledgement
 A huge thank you to [the UAD project](https://github.com/0x192/Universal-Android-Debloater) for their application knowledge base that is used in this project.
