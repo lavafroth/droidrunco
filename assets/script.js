@@ -7,21 +7,31 @@ function accordion(id) {
     extended = extended == id ? '' : id;
 }
 
-function search() {
-    $.ajax({
-        url: "/",
-        datatype: 'json',
-        contentType: 'application/json',
-        method: 'POST',
-        data: JSON.stringify({
-            "pkg": $('#search').val().toLowerCase()
-        }),
-        success: function(data) {
-            var entries = []
-	    if (data == null) {
-		return
-	    }
-            data.map(function(app) {
+function generateElements(html) {
+  const template = document.createElement('template');
+  template.innerHTML = html.trim();
+  return template.content.children;
+}
+
+async function search() {
+	const response = await fetch('/', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+		    "pkg": document.querySelector('#search').value.toLowerCase()
+		}),
+	});
+
+	if (!response.ok) {
+		console.log('Connection with the backend is lost.')
+	}
+
+    document.querySelector('.accordion').replaceChildren(...(
+		(
+			JSON.parse(await response.text()) ?? []
+		).map(function(app) {
                 var ID = app.pkg.replaceAll('.', '');
                 var icon = app.enabled ? trash_icon : recycle_icon;
                 var show = ID == extended ? ' show' : '';
@@ -36,7 +46,7 @@ function search() {
                         } else if (app.removal == "Unsafe") {
                                 color = "danger";
                         }
-                entries.push(`<div class="accordion-item">
+                return generateElements(`<div class="accordion-item">
         <h2 class="accordion-header" id="heading${ID}">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${ID}" aria-expanded="true" aria-controls="collapse${ID}" onclick="accordion('${ID}')">
                 <h5 class="mb-1">${app.label}
@@ -49,27 +59,29 @@ function search() {
                 </button>
         </h2>
         <div id="collapse${ID}" class="accordion-collapse collapse${show}" aria-labelledby="heading${ID}" data-bs-parent="#accordion">
-          <div class="accordion-body">${description}</div></div>`);
-            });
-            $('.accordion .accordion-item').remove();
-            $('.accordion').append(entries);
-        }
-    });
+          <div class="accordion-body">${description}</div></div>`)[0];
+            })
+	)
+    );
 }
 
-function toggle(pkg) {
-    $.ajax({
-        url: "/",
-        datatype: 'json',
-        method: 'PATCH',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            pkg: pkg,
-        })
-    });
-    search();
+async function toggle(pkg) {
+	await fetch('/', {
+		method: 'PATCH',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+        	body: JSON.stringify({
+            		pkg: pkg,
+        	})
+	});
+	search();
 }
 
-$('.search').on('input', search);
-$(setInterval(search, 1000));
-$(search);
+document.querySelector('#search').addEventListener('keyup', search);
+
+document.body.onload = function() {
+	setInterval(search, 1000);
+	search();
+};
+
