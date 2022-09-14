@@ -100,7 +100,7 @@ adb kill-server
 ## Demo
 
 ### Android 11+ Wireless Debugging Demo
-[![Wireless debugging demo](https://thumbnails.odycdn.com/optimize/s:390:220/quality:85/plain/https://thumbs.odycdn.com/4ef7eae22541fbad110039f5b7ba3a14.webp)](https://odysee.com/@lavafroth:d/droidrunco_wireless_debugging:d)
+<a href="https://odysee.com/@lavafroth:d/droidrunco_wireless_debugging:d"><img src="https://thumbnails.odycdn.com/optimize/s:390:220/quality:85/plain/https://thumbs.odycdn.com/4ef7eae22541fbad110039f5b7ba3a14.webp" style="height:35vh"/></a>
 
 ## Acknowledgement
 A huge thank you to [the UAD project](https://github.com/0x192/Universal-Android-Debloater) for their application knowledge base that is used in this project.
