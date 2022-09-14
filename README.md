@@ -91,7 +91,7 @@ adb kill-server
 - Start typing to search for an app
 - Click the trash icon next to the app's entry to wipe it. The icon color indicated the severity of uninstalling the app.
   - Green: Recommended
-  - Blue: Advanced
+  - Lime: Advanced
   - Yellow: Expert
   - Red: Unsafe
   - Gray: Untested

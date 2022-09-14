@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"log"
 	adb "github.com/zach-klippenstein/goadb"
 )
 
@@ -120,7 +120,7 @@ func main() {
 	if strings.Contains(out, "not executable") {
 		log.Fatalf("Failed to execute extractor: %q", out)
 	}
-	log.Info("Initializing package entries")
+	log.Print("Initializing package entries")
 	refreshPackageList()
 	go func() {
 		for {
@@ -129,7 +129,7 @@ func main() {
 	}()
 	http.Handle("/public/", http.StripPrefix(strings.TrimRight("/public/", "/"), http.FileServer(http.FS(assets))))
 	http.HandleFunc("/", handler)
-	log.Info("Visit http://localhost:8080 to access the dashboard")
+	log.Print("Visit http://localhost:8080 to access the dashboard")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -137,9 +137,7 @@ func worker(work chan *app.App) {
 	for app := range work{
 		label, err := device.RunCommand(fmt.Sprintf("%s %s", extractor, app.Path))
 		if err != nil {
-			log.WithFields(log.Fields{
-				"path": app.Path,
-			}).Warnf("Failed to retrieve package label: %q", err)
+			log.Printf("Failed to retrieve package label: %q, path: %s", err, app.Path)
 		}
 
 		app.SetLabel(strings.Trim(label, "\n"))
@@ -193,19 +191,19 @@ func toggle(App *app.App) string {
 		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", App.Package))
 		if err != nil {
 			trace := fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
-			log.Warn(trace)
+			log.Print(trace)
 			return trace
 		}
 		if !strings.Contains(out, "Success") {
 			trace := fmt.Sprintf("Failed to uninstall %s", App.String())
-			log.Warn(trace)
+			log.Print(trace)
 			return trace
 		}
 
 		App.Enabled = false
 
 		trace := fmt.Sprintf("Successfully uninstalled %s", App.String())
-		log.Info(trace)
+		log.Print(trace)
 		return trace
 	}
 
@@ -214,7 +212,7 @@ func toggle(App *app.App) string {
 	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", App.Package))
 	if err != nil {
 		trace := fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
-		log.Warn(trace)
+		log.Print(trace)
 		return trace
 	}
 	path := ""
@@ -227,25 +225,25 @@ func toggle(App *app.App) string {
 
 	if path == "" {
 		trace := fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
-		log.Warn(trace)
+		log.Print(trace)
 		return trace
 	}
 
 	out, err = device.RunCommand(fmt.Sprintf("pm install -r --user 0 %s", path))
 	if err != nil {
 		trace := fmt.Sprintf("Failed to run reinstall command on %s: %q", App.String(), err)
-		log.Warn(trace)
+		log.Print(trace)
 		return trace
 	}
 	if !strings.Contains(out, "Success") {
 		trace := fmt.Sprintf("Failed to reinstall %s", App.String())
-		log.Warn(trace)
+		log.Print(trace)
 		return trace
 	}
 
 	App.Enabled = true
 
 	trace := fmt.Sprintf("Successfully reinstalled %s", App.String())
-	log.Info(trace)
+	log.Print(trace)
 	return trace
 }
