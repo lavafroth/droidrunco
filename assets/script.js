@@ -29,23 +29,17 @@ async function search() {
 	}
 
     document.querySelector('.accordion').replaceChildren(...(
-		(
-			JSON.parse(await response.text()) ?? []
-		).map(function(app) {
+		JSON.parse(await response.text())?.map(function(app) {
                 var ID = app.pkg.replaceAll('.', '');
                 var icon = app.enabled ? trash_icon : recycle_icon;
                 var show = ID == extended ? ' show' : '';
                 var description = app.description.replaceAll('\n', "<br />");
-                var color = 'secondary';
-                        if (app.removal == "Recommended") {
-                                        color = 'success';
-                        } else if (app.removal == "Advanced") {
-                                        color = 'primary';
-                        } else if (app.removal == "Expert") {
-                                color = "warning";
-                        } else if (app.removal == "Unsafe") {
-                                color = "danger";
-                        }
+                var color = {
+			'Recommended':'success',
+                        'Advanced':'primary',
+                        'Expert':'warning',
+                        'Unsafe':'danger'
+			}[app.removal] || 'secondary';
                 return generateElements(`<div class="accordion-item">
         <h2 class="accordion-header" id="heading${ID}">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${ID}" aria-expanded="true" aria-controls="collapse${ID}" onclick="accordion('${ID}')">
