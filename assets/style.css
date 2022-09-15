@@ -1,7 +1,7 @@
 * {
 	padding: 0;
 	margin: 0;
-	font-family: 'Work Sans', sans-serif;
+	font-family: sans-serif;
 }
 
 .description, .package, .label {
@@ -45,7 +45,7 @@ body {
 }
 
 .container {
-	margin: 2rem;
+	margin: .5rem;
 	display: flex;
 	flex-direction: column;
 	padding: 0.5rem;
@@ -53,7 +53,7 @@ body {
 	border-radius: 1rem;
 	overflow-x: hidden;
 	overflow-y: scroll;
-	height: calc(100vh - 11rem);
+	height: calc(100vh - 6rem);
 }
 
 .container::-webkit-scrollbar {
@@ -77,8 +77,9 @@ body {
 
 .search {
 	text-align: center;
+	width: calc(100vw - 8rem);
 	font-size: 1.5rem;
-	padding: 1rem;
+	padding: .5rem;
 	border-radius: 1.5rem;
 	outline: none;
 	background: #eee;
@@ -86,7 +87,7 @@ body {
 }
 
 .search-container {
-	margin-top: 1.5rem;
+	margin-top: .5rem;
 	display: flex;
 	justify-content: center;
 }
@@ -110,7 +111,7 @@ body {
 }
 
 .container .entry .description {
-	margin: 0.5rem 0 0.5rem 0;
+	margin: 1rem 0 0.5rem 0;
 	padding: 0.5rem;
 	border: 0.15rem solid #ccc;
 	border-radius: 1rem;
@@ -124,3 +125,21 @@ body {
 	height: 2rem;
 	color: #888;
 }
+
+@media only screen and (min-width: 768px) {
+  /* For desktop: */
+  .search {
+	width: calc(100vw - 6rem);
+  }
+
+  .search-container {
+	margin-top: 1.5rem;
+  }
+  
+  .container {
+	margin: 2rem;
+	height: calc(100vh - 10rem);
+  }
+}
+
+
