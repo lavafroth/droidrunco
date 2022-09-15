@@ -7,7 +7,6 @@ import (
 	"github.com/lavafroth/droidrunco/app"
 	"github.com/lavafroth/droidrunco/meta"
 	"net/http"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -187,19 +186,27 @@ func refreshPackageList() {
 }
 
 func toggle(App *app.App) string {
+	// TODO: Send toast messages to the Web UI corresponding to each trace.
 	if App.Enabled {
+		// Isssue the uninstall command for the respective package
 		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", App.Package))
 		if err != nil {
 			trace := fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
 			log.Print(trace)
 			return trace
 		}
+		// If the output does not contain "Success",
+		// we were unable to uninstall the app as user 0.
 		if !strings.Contains(out, "Success") {
 			trace := fmt.Sprintf("Failed to uninstall %s", App.String())
 			log.Print(trace)
+			// So we immediately return.
 			return trace
 		}
 
+		// If we have successfully uninstalled
+		// the app for user 0, we set the App's
+		// Enabled field to false.
 		App.Enabled = false
 
 		trace := fmt.Sprintf("Successfully uninstalled %s", App.String())
@@ -207,8 +214,7 @@ func toggle(App *app.App) string {
 		return trace
 	}
 
-	pathRe := regexp.MustCompile("path: (?P<path>.*.apk)")
-	groupNames := pathRe.SubexpNames()
+	// If we are to re-enable a system package, we will dump its package info.
 	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", App.Package))
 	if err != nil {
 		trace := fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
@@ -216,31 +222,47 @@ func toggle(App *app.App) string {
 		return trace
 	}
 	path := ""
-	for i, group := range pathRe.FindAllStringSubmatch(out, -1)[0] {
-		if groupNames[i] == "path" {
-			path = group
+	// We then look for a line that specifies
+	// where the system app's installer resides.
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.Trim(line, " \t")
+		if strings.HasPrefix(line, "path: ") {
+			// len("path: ") = 6
+			// Index(".apk") + 4 to ensure we include the extension
+			path = line[6: strings.Index(line, ".apk") + 4]
 			break
 		}
 	}
 
+	// If the path is empty,
+	// it is probably not a system package
+	// in which case, we can't proceed.
 	if path == "" {
 		trace := fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
 		log.Print(trace)
+		// So, we return early.
 		return trace
 	}
 
+	// If we have a valid path to the installer, we issue the reinstall command.
 	out, err = device.RunCommand(fmt.Sprintf("pm install -r --user 0 %s", path))
 	if err != nil {
 		trace := fmt.Sprintf("Failed to run reinstall command on %s: %q", App.String(), err)
 		log.Print(trace)
 		return trace
 	}
+
+	// If the output does not contain "Success",
+	// we were unable to reinstall the app as user 0.
 	if !strings.Contains(out, "Success") {
 		trace := fmt.Sprintf("Failed to reinstall %s", App.String())
 		log.Print(trace)
 		return trace
 	}
 
+	// If we have successfully reinstalled
+	// the app for user 0, we set the App's
+	// Enabled field to true.
 	App.Enabled = true
 
 	trace := fmt.Sprintf("Successfully reinstalled %s", App.String())
