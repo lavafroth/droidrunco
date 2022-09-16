@@ -13,7 +13,7 @@ async function jsonFetch(method, some) {
 }
 
 async function search() {
-	document.querySelector('.container').replaceChildren(...
+	document.querySelector('container').replaceChildren(...
 		await jsonFetch('POST', {"pkg": searchBox.value.toLowerCase()})
 		.then(response => response.json())
 		.then(apps => apps?.map(function(app) {
@@ -25,15 +25,15 @@ async function search() {
 			template = document.createElement('template');
 			template.innerHTML = `
 			<div class="entry" id="${ID}">
-				<div class="action ${app.removal}">${icon}</div>
+				<action class="${app.removal}">${icon}</action>
 				<div class="label">${app.label}</div>
 				<div class="package">${app.pkg}</div>
 				${tag}
 				<div class="description ${collapsedState}">${description}</div>
 			</div>`.trim();
 			const entry = template.content.children[0];
-			entry.addEventListener('click', (evt) => {
-				if (['svg', 'path'].indexOf(evt.target.nodeName) != -1 || evt.target.className.indexOf('action') != -1) {
+			entry.addEventListener('click', e => {
+				if (['svg', 'path', 'action'].indexOf(e.target.nodeName) + 1) {
 					return jsonFetch('PATCH', {pkg: app.pkg});
 				}
 				document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
