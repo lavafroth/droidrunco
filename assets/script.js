@@ -4,75 +4,44 @@ searchBox = document.querySelector('.search');
 
 var extended = {}
 
-function accordion(id) {
-	description = document.querySelector(`#${id} .description`);
-	if (extended[id]) {
-		description.classList.add('collapsed');
-		description.classList.add('collapsed-after');
-	} else {
-		description.classList.remove('collapsed-after');
-		description.classList.remove('collapsed');
-	}
-	extended[id] = !extended[id];
-}
-
-function generateElements(html) {
-  const template = document.createElement('template');
-  template.innerHTML = html.trim();
-  return template.content.children;
+async function jsonFetch(method, some) {
+	return fetch('/', {
+			method: method,
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify(some),
+		})
 }
 
 async function search() {
-	document.querySelector('.container').replaceChildren(...
-		await fetch('/', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-			    	"pkg": searchBox.value.toLowerCase()
-			}),
-		})
+	document.querySelector('container').replaceChildren(...
+		await jsonFetch('POST', {"pkg": searchBox.value.toLowerCase()})
 		.then(response => response.json())
 		.then(apps => apps?.map(function(app) {
-                const ID = app.pkg.replaceAll('.', ''),
-		icon = app.enabled ? trash_icon : recycle_icon,
-		description = app.description.replaceAll('\n', "<br />"),
-		collapsedState = extended[ID] ? '' : 'collapsed collapsed-after';
-		tag = app.list ? `<span class="tag">${app.list}</span>`: '';
-                var entry = generateElements(
-		`<div class="entry" id="${ID}">
-			<div class="action ${app.removal}">${icon}</div>
-			<div class="label">${app.label}</div>
-			<div class="package">${app.pkg}</div>
-			${tag}
-			<div class="description ${collapsedState}">${description}</div>
-		</div>`
-		)[0];
-		entry.addEventListener('click', (evt) => {
-			if (['svg', 'path'].indexOf(evt.target.nodeName) != -1 || evt.target.className.indexOf('action') != -1) {
-				toggle(app.pkg);
-				return;
-			}
-			accordion(ID);
-		});
-		return entry;
-            		})
-		) || []
+			const ID = app.pkg.replaceAll('.', ''),
+			icon = app.enabled ? trash_icon : recycle_icon,
+			description = app.description.replaceAll('\n', "<br />"),
+			collapsedState = extended[ID] ? '' : 'collapsed collapsed-after',
+			tag = app.list ? `<span class="tag">${app.list}</span>`: '',
+			template = document.createElement('template');
+			template.innerHTML = `
+			<div class="entry" id="${ID}">
+				<action class="${app.removal}">${icon}</action>
+				<div class="label">${app.label}</div>
+				<div class="package">${app.pkg}</div>
+				${tag}
+				<div class="description ${collapsedState}">${description}</div>
+			</div>`.trim();
+			const entry = template.content.children[0];
+			entry.addEventListener('click', e => {
+				if (['svg', 'path', 'action'].indexOf(e.target.nodeName) + 1) {
+					return jsonFetch('PATCH', {pkg: app.pkg});
+				}
+				document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
+				extended[ID] ^= true;
+			});
+			return entry;
+            	})) || []
 	);
-}
-
-async function toggle(pkg) {
-	await fetch('/', {
-		method: 'PATCH',
-		headers: {
-			'Content-Type': 'application/json'
-		},
-        	body: JSON.stringify({
-            		pkg: pkg,
-        	})
-	});
-	search();
 }
 
 searchBox.addEventListener('keyup', search);
