@@ -36,7 +36,7 @@ async function search() {
 				if (['svg', 'path'].indexOf(evt.target.nodeName) != -1 || evt.target.className.indexOf('action') != -1) {
 					return jsonFetch('PATCH', {pkg: app.pkg});
 				}
-				document.querySelector(`#${ID} .description`).classList[extended[id] ? 'add' : 'remove']('collapsed', 'collapsed-after');
+				document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
 				extended[ID] ^= true;
 			});
 			return entry;
