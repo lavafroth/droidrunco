@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"log"
 	adb "github.com/zach-klippenstein/goadb"
+	"log"
 )
 
 const extractor string = "/data/local/tmp/extractor"
@@ -89,6 +89,9 @@ func main() {
 	}
 
 	client, err = adb.NewWithConfig(adb.ServerConfig{
+		// Use the default ADB port.
+		// This way, we don't have to adb kill-server
+		// unless it was previously running on a different port.
 		Port: 5037,
 	})
 	if err != nil {
@@ -110,7 +113,16 @@ func main() {
 	if err := push(binary, extractor); err != nil {
 		log.Fatal(err)
 	}
+
+	// It appears that immediately running the command to
+	// execute the binary causes a file not found error.
+
+	// Perhaps it is because pushing the file takes a while
+	// and the file handle does not get closed immediately.
+
+	// Thus, we add a 1 second delay.
 	time.Sleep(1 * time.Second)
+
 	out, err = device.RunCommand(extractor)
 	if err != nil {
 		log.Fatalf("failed to execute extractor: %q", err)
@@ -120,7 +132,14 @@ func main() {
 		log.Fatalf("Failed to execute extractor: %q", out)
 	}
 	log.Print("Initializing package entries")
+
+	// This first refresh is the most time consuming
+	// as it has to index all the apps on the device
 	refreshPackageList()
+
+	// These subsequent calls are cheap, both in terms
+	// of time as well as processing because we prune
+	// all the packages previously seen.
 	go func() {
 		for {
 			refreshPackageList()
@@ -133,7 +152,7 @@ func main() {
 }
 
 func worker(work chan *app.App) {
-	for app := range work{
+	for app := range work {
 		label, err := device.RunCommand(fmt.Sprintf("%s %s", extractor, app.Path))
 		if err != nil {
 			log.Printf("Failed to retrieve package label: %q, path: %s", err, app.Path)
@@ -230,8 +249,8 @@ func toggle(App *app.App) (trace string) {
 	// where the system app's installer resides.
 	for _, line := range strings.Split(out, "\n") {
 		if _, after, found := strings.Cut(line, "path: "); found {
-			path, _, _ = strings.Cut(after, ".apk")
-			path += ".apk"
+			// 4 since it is len(".apk")
+			path = after[:strings.Index(after, ".apk")+4]
 			break
 		}
 	}
