@@ -165,10 +165,12 @@ func refreshPackageList() {
 
 	for _, line := range strings.Split(out, "\n") {
 		line := strings.Split(line, ":")[1]
-		delim := strings.LastIndex(line, "=")
-		path, pkg := line[:delim], line[delim+1:]
-		var App *app.App
-		if App = pkgs.Get(pkg); App == nil {
+		path, pkg, _ := strings.Cut(line, "=")
+
+		// If we can already find the same package in the old list,
+		// we don't bother looking up its label name.
+		App := pkgs.Get(pkg)
+		if App == nil {
 			App = &app.App{Meta: meta.Meta{Package: pkg}, Path: path, Enabled: true}
 			workChan <- App
 		}
@@ -176,7 +178,11 @@ func refreshPackageList() {
 	}
 
 	for _, app := range pkgs {
+		// The app was previously enabled
+		// but is no more in the new list.
 		if fresh.Get(app.Package) == nil {
+			// We can conclude that the
+			// app has been disabled.
 			app.Enabled = false
 			fresh = append(fresh, app)
 		}
@@ -185,23 +191,23 @@ func refreshPackageList() {
 	pkgs = fresh
 }
 
-func toggle(App *app.App) string {
+func toggle(App *app.App) (trace string) {
 	// TODO: Send toast messages to the Web UI corresponding to each trace.
+	defer log.Print(trace)
+
 	if App.Enabled {
 		// Isssue the uninstall command for the respective package
 		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", App.Package))
 		if err != nil {
-			trace := fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
-			log.Print(trace)
-			return trace
+			trace = fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
+			return
 		}
 		// If the output does not contain "Success",
 		// we were unable to uninstall the app as user 0.
 		if !strings.Contains(out, "Success") {
-			trace := fmt.Sprintf("Failed to uninstall %s", App.String())
-			log.Print(trace)
 			// So we immediately return.
-			return trace
+			trace = fmt.Sprintf("Failed to uninstall %s", App.String())
+			return
 		}
 
 		// If we have successfully uninstalled
@@ -209,27 +215,23 @@ func toggle(App *app.App) string {
 		// Enabled field to false.
 		App.Enabled = false
 
-		trace := fmt.Sprintf("Successfully uninstalled %s", App.String())
-		log.Print(trace)
-		return trace
+		trace = fmt.Sprintf("Successfully uninstalled %s", App.String())
+		return
 	}
 
 	// If we are to re-enable a system package, we will dump its package info.
 	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", App.Package))
 	if err != nil {
-		trace := fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
-		log.Print(trace)
-		return trace
+		trace = fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
+		return
 	}
 	path := ""
 	// We then look for a line that specifies
 	// where the system app's installer resides.
 	for _, line := range strings.Split(out, "\n") {
-		line = strings.Trim(line, " \t")
-		if strings.HasPrefix(line, "path: ") {
-			// len("path: ") = 6
-			// Index(".apk") + 4 to ensure we include the extension
-			path = line[6: strings.Index(line, ".apk") + 4]
+		if _, after, found := strings.Cut(line, "path: "); found {
+			path, _, _ = strings.Cut(after, ".apk")
+			path += ".apk"
 			break
 		}
 	}
@@ -238,26 +240,23 @@ func toggle(App *app.App) string {
 	// it is probably not a system package
 	// in which case, we can't proceed.
 	if path == "" {
-		trace := fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
-		log.Print(trace)
-		// So, we return early.
-		return trace
+		// We return early.
+		trace = fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
+		return
 	}
 
 	// If we have a valid path to the installer, we issue the reinstall command.
 	out, err = device.RunCommand(fmt.Sprintf("pm install -r --user 0 %s", path))
 	if err != nil {
-		trace := fmt.Sprintf("Failed to run reinstall command on %s: %q", App.String(), err)
-		log.Print(trace)
-		return trace
+		trace = fmt.Sprintf("Failed to run reinstall command on %s: %q", App.String(), err)
+		return
 	}
 
 	// If the output does not contain "Success",
 	// we were unable to reinstall the app as user 0.
 	if !strings.Contains(out, "Success") {
-		trace := fmt.Sprintf("Failed to reinstall %s", App.String())
-		log.Print(trace)
-		return trace
+		trace = fmt.Sprintf("Failed to reinstall %s", App.String())
+		return
 	}
 
 	// If we have successfully reinstalled
@@ -265,7 +264,6 @@ func toggle(App *app.App) string {
 	// Enabled field to true.
 	App.Enabled = true
 
-	trace := fmt.Sprintf("Successfully reinstalled %s", App.String())
-	log.Print(trace)
-	return trace
+	trace = fmt.Sprintf("Successfully reinstalled %s", App.String())
+	return
 }
