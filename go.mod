@@ -9,4 +9,4 @@ require (
 	github.com/zach-klippenstein/goadb v0.0.0-20201208042340-620e0e950ed7
 )
 
-require golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+require golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
