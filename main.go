@@ -2,17 +2,17 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"github.com/lavafroth/droidrunco/app"
 	"github.com/lavafroth/droidrunco/meta"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	adb "github.com/zach-klippenstein/goadb"
-	"log"
 )
 
 const extractor string = "/data/local/tmp/extractor"
@@ -21,6 +21,7 @@ var device *adb.Device
 var pkgs app.Apps
 var db meta.DB
 var client *adb.Adb
+var updated = false
 
 //go:embed extractor/build/*
 var binaries embed.FS
@@ -47,38 +48,21 @@ func push(local, remote string) error {
 	return nil
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		App, err := app.Unmarshal(r.Body)
+func WSLoopHandleFunc(path string, Fn func(conn *websocket.Conn) error) {
+	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		upgrader := websocket.Upgrader{}
+		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Failed upgrading to websocket: %q", err)
 		}
-		filtered := pkgs.WithPackageOrLabel(strings.ToLower(App.Package))
-		response, err := json.Marshal(filtered)
-		if err != nil {
-			log.Fatal(err)
+		defer conn.Close()
+		for {
+			if err := Fn(conn); err != nil {
+				log.Print(err)
+				return
+			}
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(response)
-	case http.MethodGet:
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write(index)
-	case http.MethodPatch:
-		App, err := app.Unmarshal(r.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		response, err := json.Marshal(map[string]string{"status": toggle(pkgs.Get(App.Package))})
-		if err != nil {
-			log.Fatalln(err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(response)
-	}
+	})
 }
 
 func main() {
@@ -140,13 +124,34 @@ func main() {
 	// These subsequent calls are cheap, both in terms
 	// of time as well as processing because we prune
 	// all the packages previously seen.
-	go func() {
-		for {
-			refreshPackageList()
-		}
-	}()
+
 	http.Handle("/public/", http.StripPrefix(strings.TrimRight("/public/", "/"), http.FileServer(http.FS(assets))))
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", func (w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		w.Write(index)
+	})
+	// TODO: WSLoopHandleFunc("/status", ...
+	WSLoopHandleFunc("/list", func(conn *websocket.Conn) (err error) {
+		refreshPackageList()
+		if updated {
+			if err = conn.WriteJSON(pkgs); err != nil {
+				return fmt.Errorf("Failed writing fresh package list to websocket connection: %q", err)
+			}
+			updated = false
+		}
+		return
+	})
+	WSLoopHandleFunc("/patch", func(conn *websocket.Conn) (err error) {
+		App := app.App{}
+		if err = conn.ReadJSON(&App); err != nil {
+			return fmt.Errorf("Failed to read patch query websocket connection: %q", err)
+		}
+		log.Print(toggle(pkgs.Get(App.Package)))
+		// TODO: Send toast messages to the Web UI corresponding to each trace.
+		updated = true
+		return
+	})
 	log.Print("Visit http://localhost:8080 to access the dashboard")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
@@ -182,19 +187,29 @@ func refreshPackageList() {
 		go worker(workChan)
 	}
 
+	gotFreshPackages := false
+
 	for _, line := range strings.Split(out, "\n") {
-		line := strings.Split(line, ":")[1]
-		path, pkg, _ := strings.Cut(line, "=")
+		_, line, _ := strings.Cut(line, ":")
+		i := strings.LastIndex(line, "=")
+		path, pkg := line[:i], line[i+1:]
 
 		// If we can already find the same package in the old list,
 		// we don't bother looking up its label name.
 		App := pkgs.Get(pkg)
 		if App == nil {
+			gotFreshPackages = true
 			App = &app.App{Meta: meta.Meta{Package: pkg}, Path: path, Enabled: true}
 			workChan <- App
 		}
 		fresh = append(fresh, App)
 	}
+
+	if !gotFreshPackages {
+		return
+	}
+	
+	updated = gotFreshPackages
 
 	for _, app := range pkgs {
 		// The app was previously enabled
@@ -210,39 +225,31 @@ func refreshPackageList() {
 	pkgs = fresh
 }
 
-func toggle(App *app.App) (trace string) {
-	// TODO: Send toast messages to the Web UI corresponding to each trace.
-	defer log.Print(trace)
-
+func toggle(App *app.App) string {
 	if App.Enabled {
 		// Isssue the uninstall command for the respective package
 		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", App.Package))
 		if err != nil {
-			trace = fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
-			return
+			return fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
 		}
 		// If the output does not contain "Success",
 		// we were unable to uninstall the app as user 0.
 		if !strings.Contains(out, "Success") {
 			// So we immediately return.
-			trace = fmt.Sprintf("Failed to uninstall %s", App.String())
-			return
+			return fmt.Sprintf("Failed to uninstall %s", App.String())
 		}
 
 		// If we have successfully uninstalled
 		// the app for user 0, we set the App's
 		// Enabled field to false.
 		App.Enabled = false
-
-		trace = fmt.Sprintf("Successfully uninstalled %s", App.String())
-		return
+		return fmt.Sprintf("Successfully uninstalled %s", App.String())
 	}
 
 	// If we are to re-enable a system package, we will dump its package info.
 	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", App.Package))
 	if err != nil {
-		trace = fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
-		return
+		return fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
 	}
 	path := ""
 	// We then look for a line that specifies
@@ -260,29 +267,24 @@ func toggle(App *app.App) (trace string) {
 	// in which case, we can't proceed.
 	if path == "" {
 		// We return early.
-		trace = fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
-		return
+		return fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
 	}
 
 	// If we have a valid path to the installer, we issue the reinstall command.
 	out, err = device.RunCommand(fmt.Sprintf("pm install -r --user 0 %s", path))
 	if err != nil {
-		trace = fmt.Sprintf("Failed to run reinstall command on %s: %q", App.String(), err)
-		return
+		return fmt.Sprintf("Failed to run reinstall command on %s: %q", App.String(), err)
 	}
 
 	// If the output does not contain "Success",
 	// we were unable to reinstall the app as user 0.
 	if !strings.Contains(out, "Success") {
-		trace = fmt.Sprintf("Failed to reinstall %s", App.String())
-		return
+		return fmt.Sprintf("Failed to reinstall %s", App.String())
 	}
 
 	// If we have successfully reinstalled
 	// the app for user 0, we set the App's
 	// Enabled field to true.
 	App.Enabled = true
-
-	trace = fmt.Sprintf("Successfully reinstalled %s", App.String())
-	return
+	return fmt.Sprintf("Successfully reinstalled %s", App.String())
 }
