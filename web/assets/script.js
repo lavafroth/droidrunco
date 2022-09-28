@@ -3,24 +3,31 @@ trash_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" pre
 searchBox = document.querySelector('.search');
 
 var extended = {}
+var apps = []
 var patchWs = new WebSocket("ws://localhost:8080/patch")
 var listWs = new WebSocket("ws://localhost:8080/list")
-var apps = []
 
-listWs.onmessage = (e) => {
+listWs.onmessage = e => {
 	apps = JSON.parse(e.data) || [];
 	displayApps()
 }
 
 function displayApps() {
 	document.querySelector('container').replaceChildren(...
-			apps.filter(function(app) {
-				var searchQuery = searchBox.value.toLowerCase()
-				var pkg = app.pkg.toLowerCase()
-				var label = app.label.toLowerCase()
-				return label.indexOf(searchQuery) > -1 || pkg.indexOf(searchQuery) > -1
-			})
-			.map(function(app) {
+			apps.filter(
+				app => app.label.toLowerCase().includes(searchBox.value.toLowerCase()) || app.pkg.toLowerCase().includes(searchBox.value.toLowerCase())
+			).sort((a, b) => {
+				if (a.label && !b.label) {
+					return false
+				}
+				if (!a.label && b.label) {
+					return true
+				}
+				if (a.label) {
+					return a.label > b.label
+				}
+				return a.label < b.label
+			}).map(app => {
 				const ID = app.pkg.replaceAll('.', ''),
 				icon = app.enabled ? trash_icon : recycle_icon,
 				description = app.description.replaceAll('\n', "<br />"),
@@ -37,7 +44,7 @@ function displayApps() {
 				</div>`.trim();
 				const entry = template.content.children[0];
 				entry.addEventListener('click', e => {
-					if (['svg', 'path', 'action'].indexOf(e.target.nodeName) + 1) {
+					if (['svg', 'path', 'action'].includes(e.target.nodeName)) {
 						patchWs.send(JSON.stringify({pkg: app.pkg}))
 					}
 					document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
@@ -45,7 +52,7 @@ function displayApps() {
 				});
 				return entry;
 			})
-		);
+		)
 }
 
 searchBox.addEventListener('keyup', displayApps)

@@ -8,7 +8,7 @@ all: clean build
 build: embed amd64-linux 386-linux arm-linux amd64-darwin amd64-windows 386-windows
 
 embed:
-	$(MAKE) -C extractor build
+	$(MAKE) -C bridge/extractor build
 
 amd64-linux:
 	GOOS=linux GOARCH=amd64 $(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco-$@
