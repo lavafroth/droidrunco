@@ -3,51 +3,49 @@ trash_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" pre
 searchBox = document.querySelector('.search');
 
 var extended = {}
+var patchWs = new WebSocket("ws://localhost:8080/patch")
+var listWs = new WebSocket("ws://localhost:8080/list")
+var apps = []
 
-async function jsonFetch(method, some) {
-	return fetch('/', {
-			method: method,
-			headers: {'Content-Type': 'application/json'},
-			body: JSON.stringify(some),
-		})
+listWs.onmessage = (e) => {
+	apps = JSON.parse(e.data) || [];
+	displayApps()
 }
 
-async function search() {
+function displayApps() {
 	document.querySelector('container').replaceChildren(...
-		await jsonFetch('POST', {"pkg": searchBox.value.toLowerCase()})
-		.then(response => response.json())
-		.then(apps => apps?.map(function(app) {
-			const ID = app.pkg.replaceAll('.', ''),
-			icon = app.enabled ? trash_icon : recycle_icon,
-			description = app.description.replaceAll('\n', "<br />"),
-			collapsedState = extended[ID] ? '' : 'collapsed collapsed-after',
-			tag = app.list ? `<span class="tag">${app.list}</span>`: '',
-			template = document.createElement('template');
-			template.innerHTML = `
-			<div class="entry" id="${ID}">
-				<action class="${app.removal}">${icon}</action>
-				<div class="label">${app.label}</div>
-				<div class="package">${app.pkg}</div>
-				${tag}
-				<div class="description ${collapsedState}">${description}</div>
-			</div>`.trim();
-			const entry = template.content.children[0];
-			entry.addEventListener('click', e => {
-				if (['svg', 'path', 'action'].indexOf(e.target.nodeName) + 1) {
-					return jsonFetch('PATCH', {pkg: app.pkg});
-				}
-				document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
-				extended[ID] ^= true;
-			});
-			return entry;
-            	})) || []
-	);
+			apps.filter(function(app) {
+				var searchQuery = searchBox.value.toLowerCase()
+				var pkg = app.pkg.toLowerCase()
+				var label = app.label.toLowerCase()
+				return label.indexOf(searchQuery) > -1 || pkg.indexOf(searchQuery) > -1
+			})
+			.map(function(app) {
+				const ID = app.pkg.replaceAll('.', ''),
+				icon = app.enabled ? trash_icon : recycle_icon,
+				description = app.description.replaceAll('\n', "<br />"),
+				collapsedState = extended[ID] ? '' : 'collapsed collapsed-after',
+				tag = app.list ? `<span class="tag">${app.list}</span>`: '',
+				template = document.createElement('template');
+				template.innerHTML = `
+				<div class="entry" id="${ID}">
+					<action class="${app.removal}">${icon}</action>
+					<div class="label">${app.label}</div>
+					<div class="package">${app.pkg}</div>
+					${tag}
+					<div class="description ${collapsedState}">${description}</div>
+				</div>`.trim();
+				const entry = template.content.children[0];
+				entry.addEventListener('click', e => {
+					if (['svg', 'path', 'action'].indexOf(e.target.nodeName) + 1) {
+						patchWs.send(JSON.stringify({pkg: app.pkg}))
+					}
+					document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
+					extended[ID] ^= true;
+				});
+				return entry;
+			})
+		);
 }
 
-searchBox.addEventListener('keyup', search);
-
-document.body.onload = function() {
-	setInterval(search, 1000);
-	search();
-};
-
+searchBox.addEventListener('keyup', displayApps)

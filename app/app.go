@@ -42,16 +42,6 @@ func (app *App) String() string {
 	return app.Package
 }
 
-func (apps Apps) WithPackageOrLabel(query string) Apps {
-	var filtered Apps
-	for _, v := range apps {
-		if strings.Contains(strings.ToLower(v.Package), query) || strings.Contains(strings.ToLower(v.Label), query) {
-			filtered = append(filtered, v)
-		}
-	}
-	return filtered
-}
-
 func (apps Apps) Get(pkg string) *App {
 	for _, app := range apps {
 		if app.Package == pkg {
