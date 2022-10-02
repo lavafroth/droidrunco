@@ -1,6 +1,8 @@
 # droidrunco
 Your Android device. Cleaner.
 
+![desktop screenshot](screenshots/desktop.png)
+
 - [Introduction](https://github.com/lavafroth/droidrunco#Introduction)
 - [Installation](https://github.com/lavafroth/droidrunco#Installation)
 - [Usage](https://github.com/lavafroth/droidrunco#Usage)
@@ -97,7 +99,7 @@ adb kill-server
   - Gray: Untested
 - If an essential system app gets accidentally removed and `droidrunco` is still running, click the recycle icon next to the entry to restore it
 
-## Demo
+## Go run droidrunco
 
 ### Android 11+ Wireless Debugging Demo
 <a href="https://odysee.com/@lavafroth:d/droidrunco_wireless_debugging:d"><img src="https://thumbnails.odycdn.com/optimize/s:390:220/quality:85/plain/https://thumbs.odycdn.com/4ef7eae22541fbad110039f5b7ba3a14.webp" style="height:35vh"/></a>
