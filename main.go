@@ -41,7 +41,7 @@ func main() {
 		if err := conn.ReadJSON(&App); err != nil {
 			return fmt.Errorf("Failed to read patch query websocket connection: %q", err)
 		}
-		if err := conn.WriteJSON(map[string]string{"status": bridge.Toggle(bridge.Cache.Get(App.Package))}); err != nil {
+		if err := conn.WriteJSON(map[string]string{"status": bridge.Toggle(bridge.Cache.Get(App.Id))}); err != nil {
 			return fmt.Errorf("Failed writing current state of app to websocket connection: %q", err)
 		}
 		// TODO: Send toast messages to the Web UI corresponding to each trace.

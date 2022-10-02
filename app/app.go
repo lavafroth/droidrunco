@@ -26,14 +26,14 @@ func (app *App) SetLabel(label string) {
 
 func (app *App) String() string {
 	if app.HasLabel {
-		return fmt.Sprintf("%s (%s)", app.Label, app.Package)
+		return fmt.Sprintf("%s (%s)", app.Label, app.Id)
 	}
-	return app.Package
+	return app.Id
 }
 
-func (apps Apps) Get(pkg string) *App {
+func (apps Apps) Get(id string) *App {
 	for _, app := range apps {
-		if app.Package == pkg {
+		if app.Id == id {
 			return app
 		}
 	}

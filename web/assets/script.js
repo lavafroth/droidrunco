@@ -15,7 +15,7 @@ listWs.onmessage = e => {
 function displayApps() {
 	document.querySelector('container').replaceChildren(...
 			apps.filter(
-				app => app.label.toLowerCase().includes(searchBox.value.toLowerCase()) || app.pkg.toLowerCase().includes(searchBox.value.toLowerCase())
+				app => app.label.toLowerCase().includes(searchBox.value.toLowerCase()) || app.id.toLowerCase().includes(searchBox.value.toLowerCase())
 			).sort((a, b) => {
 				if (a.label && !b.label) {
 					return false
@@ -28,7 +28,7 @@ function displayApps() {
 				}
 				return a.label < b.label
 			}).map(app => {
-				const ID = app.pkg.replaceAll('.', ''),
+				const ID = app.id.replaceAll('.', ''),
 				icon = app.enabled ? trash_icon : recycle_icon,
 				description = app.description.replaceAll('\n', "<br />"),
 				collapsedState = extended[ID] ? '' : 'collapsed collapsed-after',
@@ -38,14 +38,14 @@ function displayApps() {
 				<div class="entry" id="${ID}">
 					<action class="${app.removal}">${icon}</action>
 					<div class="label">${app.label}</div>
-					<div class="package">${app.pkg}</div>
+					<div class="package">${app.id}</div>
 					${tag}
 					<div class="description ${collapsedState}">${description}</div>
 				</div>`.trim();
 				const entry = template.content.children[0];
 				entry.addEventListener('click', e => {
 					if (['svg', 'path', 'action'].includes(e.target.nodeName)) {
-						patchWs.send(JSON.stringify({pkg: app.pkg}))
+						patchWs.send(JSON.stringify({id: app.id}))
 					}
 					document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
 					extended[ID] ^= true;

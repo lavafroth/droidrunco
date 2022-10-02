@@ -3,9 +3,12 @@ MAKE=make
 BUILD_DIR=build
 LDFLAGS=-ldflags="-w -s"
 
-all: clean build
+all: clean embed build
 
-build: embed amd64-linux 386-linux arm-linux amd64-darwin amd64-windows 386-windows
+all-platforms: clean embed amd64-linux 386-linux arm-linux amd64-darwin amd64-windows 386-windows
+
+build:
+	$(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco
 
 embed:
 	$(MAKE) -C bridge/extractor build

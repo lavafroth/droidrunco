@@ -9,7 +9,7 @@ import (
 var dbContents []byte
 
 type Meta struct {
-	Package     string `json:"pkg"`
+	Id     string `json:"id"`
 	Description string `json:"description"`
 	Removal     string `json:"removal"`
 	List string `json:"list"`
@@ -17,9 +17,9 @@ type Meta struct {
 
 type DB []*Meta
 
-func (db DB) Get(pkg string) *Meta {
+func (db DB) Get(id string) *Meta {
 	for _, entry := range db {
-		if entry.Package == pkg {
+		if entry.Id == id {
 			return entry
 
 		}

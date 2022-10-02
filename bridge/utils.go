@@ -23,7 +23,7 @@ func labelWorker() {
 
 		app.SetLabel(strings.Trim(label, "\n"))
 
-		if k := db.Get(app.Package); k != nil {
+		if k := db.Get(app.Id); k != nil {
 			app.Meta = *k
 		}
 

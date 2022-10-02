@@ -24,14 +24,14 @@ func Refresh() {
 	for _, line := range strings.Split(out, "\n") {
 		_, line, _ := strings.Cut(line, ":")
 		i := strings.LastIndex(line, "=")
-		path, pkg := line[:i], line[i+1:]
+		path, id := line[:i], line[i+1:]
 
 		// If we can already find the same package in the old list,
 		// we don't bother looking up its label name.
-		App := Cache.Get(pkg)
+		App := Cache.Get(id)
 		if App == nil {
 			gotFreshPackages = true
-			App = &app.App{Meta: meta.Meta{Package: pkg}, Path: path, Enabled: true}
+			App = &app.App{Meta: meta.Meta{Id: id}, Path: path, Enabled: true}
 			work <- App
 		}
 		fresh = append(fresh, App)
@@ -46,7 +46,7 @@ func Refresh() {
 	for _, app := range Cache {
 		// The app was previously enabled
 		// but is no more in the new list.
-		if fresh.Get(app.Package) == nil {
+		if fresh.Get(app.Id) == nil {
 			// We can conclude that the
 			// app has been disabled.
 			app.Enabled = false
@@ -59,7 +59,7 @@ func Refresh() {
 func Toggle(App *app.App) string {
 	if App.Enabled {
 		// Isssue the uninstall command for the respective package
-		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", App.Package))
+		out, err := device.RunCommand(fmt.Sprintf("pm uninstall -k --user 0 %s", App.Id))
 		if err != nil {
 			return fmt.Sprintf("Failed to run uninstall command on %s: %q", App.String(), err)
 		}
@@ -78,7 +78,7 @@ func Toggle(App *app.App) string {
 	}
 
 	// If we are to re-enable a system package, we will dump its package info.
-	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", App.Package))
+	out, err := device.RunCommand(fmt.Sprintf("pm dump %s", App.Id))
 	if err != nil {
 		return fmt.Sprintf("Failed to dump path for issuing reinstall command on %s: %q", App.String(), err)
 	}
