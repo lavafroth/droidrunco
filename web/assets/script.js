@@ -12,6 +12,14 @@ listWs.onmessage = e => {
 	displayApps()
 }
 
+patchWs.onmessage = e => {
+	var x = document.getElementById("snackbar");
+	stat = JSON.parse(e.data)['status']
+	x.innerHTML = stat
+	x.className = stat.includes('Success') ? "success" : "failure"
+	setTimeout(function(){x.className = ""}, 3000);
+}
+
 function displayApps() {
 	document.querySelector('container').replaceChildren(...
 			apps.filter(
@@ -35,8 +43,8 @@ function displayApps() {
 				tag = app.list ? `<span class="tag">${app.list}</span>`: '',
 				template = document.createElement('template');
 				template.innerHTML = `
-				<div class="entry" id="${ID}">
-					<action class="${app.removal}">${icon}</action>
+				<div class="entry ${app.removal}" id="${ID}">
+					<action>${icon}</action>
 					<div class="label">${app.label}</div>
 					<div class="package">${app.id}</div>
 					${tag}

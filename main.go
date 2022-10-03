@@ -20,8 +20,6 @@ func main() {
 	// This first refresh is the most time consuming
 	// as it has to index all the apps on the device
 	bridge.Refresh()
-
-	// TODO: WSLoopHandleFunc("/status", ...
 	web.WsLoopHandleFunc("/list", func(conn *websocket.Conn) error {
 
 		// These subsequent calls are cheap, both in terms
@@ -44,7 +42,6 @@ func main() {
 		if err := conn.WriteJSON(map[string]string{"status": bridge.Toggle(bridge.Cache.Get(App.Id))}); err != nil {
 			return fmt.Errorf("Failed writing current state of app to websocket connection: %q", err)
 		}
-		// TODO: Send toast messages to the Web UI corresponding to each trace.
 		bridge.Updated = true
 		return nil
 	})
