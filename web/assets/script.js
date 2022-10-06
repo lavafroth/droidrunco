@@ -54,11 +54,12 @@ function displayApps() {
 				entry.addEventListener('click', e => {
 					if (['svg', 'path', 'action'].includes(e.target.nodeName)) {
 						patchWs.send(JSON.stringify({id: app.id}))
+						return
 					}
 					document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
-					extended[ID] ^= true;
+					extended[ID] ^= true
 				});
-				return entry;
+				return entry
 			})
 		)
 }
