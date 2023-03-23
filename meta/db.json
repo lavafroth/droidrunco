@@ -3132,6 +3132,15 @@
     "removal": "Recommended"
   },
   {
+    "id": "com.samsung.android.galaxycontinuity",
+    "list": "Oem",
+    "description": "Samsung Flow (https://play.google.com/store/apps/details?id=com.samsung.android.galaxycontinuity)\nIt's a service to 'seamlessly' connect your devices. You can authenticate your Tablet/PC with your smartphone, share content between devices, and sync notifications or view contents from your smartphone on your Tablet/PC.\nYou can turn on the smartphone's Mobile Hotspot to keep your Tablet/PC connected. You can also log in to your Tablet/PC with your biometric data (Iris, Fingerprints) if you register with Samsung Pass.\nhttps://www.samsung.com/levant/support/mobile-devices/what-is-the-samsung-flow-and-how-to-use-it/\n\nHas more than 81 permissions. Not the kind of app you want to keep installed if you don't use it. It increases the attack surface and can potentially compromise a lot of things (including your computer). FYI, 4 CVE has been discovered between 2021 and 2022: https://www.opencve.io/cve?vendor=samsung&product=samsung_flow\n\nPithus analysis: https://beta.pithus.org/report/77216cd6209c73d00332180319249ac6e4ef8479e68d2a21c97a52fdc5f3d62b",
+    "dependencies": [],
+    "neededBy": [],
+    "labels": [],
+    "removal": "Recommended"
+  },
+  {
     "id": "com.knox.vpn.proxyhandler",
     "list": "Oem",
     "description": "Third-party package that provides caller profile information to help consumers identify incoming calls and block unwanted ones.\nhttps://en.wikipedia.org/wiki/Hiya_(company)\nhttps://hiya.com/\nNOTE: Never trust a company that promotes spam blocking features.\nhttps://itmunch.com/robocall-caught-sending-customers-confidential-data-without-consent/\nHave a look at their privacy policy. It's... pretty scary: https://hiya.com/fr/hiya-data-policy\nNeeded for Samsung Smart Call (com.samsung.android.smartcallprovider)\nSamsung Knox allows business and personal content to \"securely\" coexist on the same handset.\nThis package handles proxies alongside KNOX.",
@@ -3485,7 +3494,7 @@
   {
     "id": "com.samsung.android.app.spage",
     "list": "Oem",
-    "description": "Bixby Home is a vertically scrolling list of information that Bixby can interact with for example weather, fitness activity and buttons\nfor controlling their smart home gadgets.\n",
+    "description": "Samsung Free (previously known as 'Bixby Home') is a vertically scrolling list of information that Bixby can interact with for example weather, fitness activity and buttons\nfor controlling their smart home gadgets.\nhttps://galaxystore.samsung.com/prepost/000005445489?appId=com.samsung.android.app.spage",
     "dependencies": [],
     "neededBy": [],
     "labels": [],
@@ -3728,7 +3737,7 @@
   {
     "id": "com.samsung.android.dynamiclock",
     "list": "Oem",
-    "description": "Samsung Dynamic Lock\nAutomatically changes your Lock screen’s wallpaper\nhttps://www.samsung.com/us/support/answer/ANS00084210/\n",
+    "description": "Samsung Wallpaper services (AKA 'Dynamic Lock')\nAutomatically changes your Lock screen’s wallpaper\nhttps://www.samsung.com/us/support/answer/ANS00084210/\n",
     "dependencies": [],
     "neededBy": [],
     "labels": [],
@@ -4358,7 +4367,7 @@
   {
     "id": "com.samsung.android.themecenter",
     "list": "Oem",
-    "description": "Samsung theme center\nRuns at startup and enable you to download theme from samsung\nSafe to remove.",
+    "description": "Samsung Theme Center (AKA Galaxy Themes Service)\nRuns at startup and allows you to apply themes from `com.samsung.android.themestore`. Has of lot of permissions (including INTERNET and INSTALL_PACKAGES) and connects to Samsung domains for analytics.\n\nPithus analysis: https://beta.pithus.org/report/973ba78ddd74a13dcf5268e980010a64ba42a3d2a1c4c62df277ead5a17cd10c",
     "dependencies": [],
     "neededBy": [],
     "labels": [],
@@ -7004,11 +7013,11 @@
   {
     "id": "com.android.inputdevices",
     "list": "Aosp",
-    "description": "Only contains a receiver named \"Android keyboard\", possibly for an external keyboard.\nLocates available keyboard layouts. Apps can offer additional keyboard layouts to the user by declaring a suitable broadcast receiver in their manifest.",
+    "description": "Only contains a receiver named \"Android keyboard\", possibly for an external keyboard.\nLocates available keyboard layouts. Apps can offer additional keyboard layouts to the user by declaring a suitable broadcast receiver in their manifest.\nWARNING: If you are using the default Samsung keyboard, then deleting this package on some phones may cause the keyboard to completely stop working. You may get locked out of your phone if the only method to authenticate yourself is using password.",
     "dependencies": [],
     "neededBy": [],
     "labels": [],
-    "removal": "Advanced"
+    "removal": "Expert"
   },
   {
     "id": "com.android.inputmethod.latin",
@@ -8145,9 +8154,63 @@
     "removal": "Recommended"
   },
   {
+    "id": "cn.zte.recorder",
+    "list": "Oem",
+    "description": "ZTE Voice Recorder with... 33 permissions and talking with Baidu servers. Pithus analysis: https://beta.pithus.org/report/bab47d32f5b93cdf4d3a3cb082d1d0e7ba3e323356391b2d46e63617c1d15324",
+    "dependencies": [],
+    "neededBy": [],
+    "labels": [],
+    "removal": "Recommended"
+  },
+  {
+    "id": "com.zte.videoplayer",
+    "list": "Oem",
+    "description": "ZTE Video Player with INTERNET and ACCESS_NETWORK_STATE permissions\nPithus analysis: https://beta.pithus.org/report/caf2da956d33c5550e42d4250b0fa31dc605f39545c2eff36438fd88a0fc7c28",
+    "dependencies": [],
+    "neededBy": [],
+    "labels": [],
+    "removal": "Recommended"
+  },
+  {
+    "id": "com.zte.heartyservice.strategy",
+    "list": "Oem",
+    "description": "Process killer, unloads programs from memory.",
+    "dependencies": [],
+    "neededBy": [],
+    "labels": [],
+    "removal": "Advanced"
+  },
+  {
+    "id": "com.zte.burntest.camera",
+    "list": "Oem",
+    "description": "Possibly a hidden stress testing app for camera.",
+    "dependencies": [],
+    "neededBy": [],
+    "labels": [],
+    "removal": "Advanced"
+  },
+  {
     "id": "com.zte.weather",
     "list": "Oem",
     "description": "ZTE Weather app.",
+    "dependencies": [],
+    "neededBy": [],
+    "labels": [],
+    "removal": "Recommended"
+  },
+  {
+    "id": "com.zte.contacts.sub",
+    "list": "Oem",
+    "description": "Possibly related to contact sync.",
+    "dependencies": [],
+    "neededBy": [],
+    "labels": [],
+    "removal": "Advanced"
+  },
+  {
+    "id": "com.zte.privacypolicy",
+    "list": "Oem",
+    "description": "ZTE privacy policy app.",
     "dependencies": [],
     "neededBy": [],
     "labels": [],
@@ -10612,8 +10675,8 @@
   },
   {
     "id": "com.samsung.android.sume.nn.service",
-    "list": "Pending",
-    "description": "",
+    "list": "Oem",
+    "description": "Provides the photo remaster feature in the Gallery app. Has the camera permission and can access all your medias but performs its job locally on the device.\n\nhttps://www.samsung.com/au/support/mobile-devices/remastering-photos-on-samsung-phone/",
     "dependencies": [],
     "neededBy": [],
     "labels": [],
