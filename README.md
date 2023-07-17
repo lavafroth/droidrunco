@@ -101,8 +101,40 @@ adb kill-server
 
 ## go run droidrunco
 
-### Android 11+ Wireless Debugging Demo
-<a href="https://odysee.com/@lavafroth:d/droidrunco_wireless_debugging:d"><img src="https://thumbnails.odycdn.com/optimize/s:390:220/quality:85/plain/https://thumbs.odycdn.com/4ef7eae22541fbad110039f5b7ba3a14.webp" style="height:35vh"/></a>
+The best part about Droidrunco is that you can run the ARM version ([grab it from the latest release](https://github.com/lavafroth/droidrunco/releases/latest)) in [Termux](https://termux.dev/en/) and even debloat the Android 11+ devices of your friends or family.
+
+- Backup the data on your device before you accidentally screw up
+- [Enable Developer Options and USB debugging on your device](https://developer.android.com/studio/debug/dev-options#enable)
+- In the aforementioned Developer Options, enable wireless debugging
+- Under wireless debugging, click on pair a device, note down the given IP:PORT pair and the KEY.
+
+- Open termux and run the following:
+
+```
+pkg in wget adb
+adb connect IP:PORT KEY
+```
+
+Where IP, PORT and KEY are the identifiers noted from the wireless debugging menu.
+Now the target device should get a notification stating that a debugger has been connected.
+Finally run the following in Termux:
+
+> Note: The version used here is 2.3.2 but you may use a higher version if available.
+
+```
+wget https://github.com/lavafroth/droidrunco/releases/download/v2.3.2/droidrunco-arm-linux
+chmod +x droidrunco-arm-linux
+./droidrunco-arm-linux
+```
+
+Open your browser and go to http://localhost:8080 and Droidrunco should be ready for use.
+
+### Help wanted
+
+As you can see, there is no easy way to run Droidrunco on a phone natively, like an app.
+Also, I am terrible at Android development. If you are an Android developer who can help me
+integrate [dadb](https://github.com/mobile-dev-inc/dadb) or [Shizuku](https://github.com/RikkaApps/Shizuku)
+into a fully fleshed app, feel free to contact me.
 
 ## Acknowledgement
 A huge thank you to [the UAD project](https://github.com/0x192/Universal-Android-Debloater) for their application knowledge base that is used in this project.
