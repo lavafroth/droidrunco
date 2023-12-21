@@ -80,7 +80,9 @@ cd droidrunco
 just clean-build
 ```
 
+#### From the AUR
 
+Archlinux users can install droidrunco from the [AUR](https://aur.archlinux.org/packages/droidrunco). Thank you robertfoster for packaging the app.
 
 ## Usage
 - Backup the data on your device before you accidentally screw up
