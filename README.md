@@ -41,6 +41,7 @@ no idea of what they're doing.
 ## Installation
 
 ### Install ADB
+
 #### Linux
 - Debian: `sudo apt install android-sdk-platform-tools`
 - Arch: `sudo pacman -S android-tools`
@@ -67,18 +68,19 @@ Droidrunco can be installed in either of the following ways:
 #### Using precompiled binaries
 This is what most users will use since it does not involve setting up a development environment. Download the binary for your operating system from the [releases](https://github.com/lavafroth/droidrunco/releases).
 
-#### For developers and tinkerers
-If you're a skeptic willing to inspect or tinker with the code, clone the repository
+#### From source
+
+To build from source, please install [`just`](https://just.systems). It's being used as a replacement for the much complicated GNU `make` and `Makefile`s.
+
+Clone the repository and create a clean build.
 
 ```bash
 git clone https://github.com/lavafroth/droidrunco.git
+cd droidrunco
+just clean-build
 ```
 
-and in the project directory run
 
-```bash
-make
-```
 
 ## Usage
 - Backup the data on your device before you accidentally screw up

@@ -1,0 +1,5 @@
+cc := "go build"
+out := "build"
+build:
+	GOARCH=arm GOOS=linux {{cc}} -o {{out}}/arm
+	GOARCH=386 GOOS=linux {{cc}} -o {{out}}/x86
