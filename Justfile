@@ -2,7 +2,7 @@ alias b := clean-build
 cc := "go build"
 out := "build"
 build OS ARCH:
-	GOOS={{OS}} GOARCH={{ARCH}} {{cc}} -o {{out}}/droidrunco-{{OS}}-{{ARCH}}
+	CGO_ENABLED=0 GOOS={{OS}} GOARCH={{ARCH}} {{cc}} -o {{out}}/droidrunco-{{OS}}-{{ARCH}} -ldflags "-w -s"
 
 clean-build:
 	rm {{out}} bridge/extractor/{{out}} -rf

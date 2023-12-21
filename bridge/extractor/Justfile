@@ -1,5 +1,5 @@
 cc := "go build"
 out := "build"
 build:
-	GOARCH=arm GOOS=linux {{cc}} -o {{out}}/arm
-	GOARCH=386 GOOS=linux {{cc}} -o {{out}}/x86
+	CGO_ENABLED=0 GOARCH=arm GOOS=linux {{cc}} -o {{out}}/arm -ldflags "-w -s"
+	CGO_ENABLED=0 GOARCH=386 GOOS=linux {{cc}} -o {{out}}/x86 -ldflags "-w -s"
