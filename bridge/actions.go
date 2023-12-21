@@ -47,8 +47,7 @@ func Refresh() {
 		// The app was previously enabled
 		// but is no more in the new list.
 		if fresh.Get(app.Id) == nil {
-			// We can conclude that the
-			// app has been disabled.
+			// App has been disabled.
 			app.Enabled = false
 			fresh = append(fresh, app)
 		}

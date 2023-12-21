@@ -1,10 +1,10 @@
 package web
 
 import (
+	"embed"
 	"log"
 	"net/http"
 	"strings"
-	"embed"
 
 	"github.com/gorilla/websocket"
 )
@@ -30,14 +30,15 @@ func WsLoopHandleFunc(path string, Fn func(conn *websocket.Conn) error) {
 	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Printf("Failed upgrading to websocket: %q", err)
+			if _, ok := err.(websocket.HandshakeError); !ok {
+				log.Printf("Failed upgrading to websocket: %q", err)
+			}
+			return
 		}
 		defer conn.Close()
-		for {
-			if err := Fn(conn); err != nil {
-				log.Print(err)
-				return
-			}
+		if err := Fn(conn); err != nil {
+			log.Print(err)
+			return
 		}
 	})
 }
