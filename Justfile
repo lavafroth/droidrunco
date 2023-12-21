@@ -13,6 +13,8 @@ clean-build:
 	just build darwin amd64
 	just build windows amd64
 	just build windows 386
+	mv {{out}}/droidrunco-windows-amd64 {{out}}/droidrunco-windows-amd64.exe
+	mv {{out}}/droidrunco-windows-386 {{out}}/droidrunco-windows-386.exe
 
 build-embedded:
 	cd bridge/extractor && just build
