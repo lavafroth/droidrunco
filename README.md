@@ -77,7 +77,7 @@ Clone the repository and create a clean build.
 ```bash
 git clone https://github.com/lavafroth/droidrunco.git
 cd droidrunco
-just clean-build
+just build-all
 ```
 
 #### From the AUR

@@ -1,38 +1,27 @@
-alias b := clean-build
+alias b := build
+alias ba := build-all
+
 cc := "go build"
 out := "build"
-build OS ARCH:
+
+build-for OS ARCH:
 	CGO_ENABLED=0 GOOS={{OS}} GOARCH={{ARCH}} {{cc}} -o {{out}}/droidrunco-{{OS}}-{{ARCH}} -ldflags "-w -s"
 
-clean-build:
+clean:
 	rm {{out}} bridge/extractor/{{out}} -rf
-	just build-embedded
-	just build linux amd64
-	just build linux 386
-	just build linux arm
-	just build darwin amd64
-	just build windows amd64
-	just build windows 386
+
+build: clean build-embedded
+	CGO_ENABLED=0 {{cc}} -o {{out}}/droidrunco -ldflags "-w -s"
+
+build-all: clean build-embedded
+	just build-for linux amd64
+	just build-for linux 386
+	just build-for linux arm
+	just build-for darwin amd64
+	just build-for windows amd64
+	just build-for windows 386
 	mv {{out}}/droidrunco-windows-amd64 {{out}}/droidrunco-windows-amd64.exe
 	mv {{out}}/droidrunco-windows-386 {{out}}/droidrunco-windows-386.exe
 
 build-embedded:
 	cd bridge/extractor && just build
-
-# amd64-linux:
-# 	GOOS=linux GOARCH=amd64 $(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco-$@
-
-# 386-linux:
-# 	GOOS=linux GOARCH=386 $(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco-$@
-
-# amd64-darwin:
-# 	GOOS=darwin GOARCH=amd64 $(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco-$@
-
-# amd64-windows:
-# 	GOOS=windows GOARCH=amd64 $(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco-$@
-
-# 386-windows:
-# 	GOOS=windows GOARCH=386 $(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco-$@
-
-# arm-linux:
-# 	GOOS=linux GOARCH=arm $(CC) ${LDFLAGS} -o ${BUILD_DIR}/droidrunco-$@

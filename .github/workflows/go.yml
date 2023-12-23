@@ -25,7 +25,7 @@ jobs:
       uses: extractions/setup-just@v1
     
     - name: Build
-      run: just clean-build
+      run: just build-all
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.0.0
