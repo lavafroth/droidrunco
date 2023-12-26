@@ -125,7 +125,7 @@ Finally run the following in Termux:
 
 > Note: The version used here is 2.3.2 but you may use a higher version if available.
 
-```
+```sh
 wget https://github.com/lavafroth/droidrunco/releases/download/v2.3.2/droidrunco-arm-linux
 chmod +x droidrunco-arm-linux
 ./droidrunco-arm-linux
@@ -135,7 +135,7 @@ Open your browser and go to http://localhost:8080 and Droidrunco should be ready
 
 ### Help wanted
 
-As you can see, there is no easy way to run Droidrunco on a phone natively, like an app.
+Evidently, there is no native way to run Droidrunco on a phone, like an app.
 Also, I am terrible at Android development. If you are an Android developer who can help me
 integrate [dadb](https://github.com/mobile-dev-inc/dadb) or [Shizuku](https://github.com/RikkaApps/Shizuku)
 into a fully fleshed app, feel free to contact me.
