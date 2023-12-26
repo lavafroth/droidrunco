@@ -25,12 +25,7 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	client, err = adb.NewWithConfig(adb.ServerConfig{
-		// Use the default ADB port.
-		// This way, we don't have to adb kill-server
-		// unless it was previously running on a different port.
-		Port: 5037,
-	})
+	client, err = adb.New()
 	if err != nil {
 		log.Fatalf("failed to start adb server: %q", err)
 	}
