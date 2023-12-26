@@ -39,9 +39,10 @@ function displayApps(apps) {
 				description = app.description.replaceAll('\n', "<br />"),
 				collapsedState = extended[ID] ? '' : 'collapsed collapsed-after',
 				tag = app.list ? `<span class="tag">${app.list}</span>`: '',
-				template = document.createElement('template');
+				template = document.createElement('template'),
+				removal = app.removal === "" ? "default-card" : app.removal;
 				template.innerHTML = `
-				<div class="entry ${app.removal}" id="${ID}">
+				<div class="entry ${removal}" id="${ID}">
 					<action>${icon}</action>
 					<div class="label">${app.label}</div>
 					<div class="package">${app.id}</div>

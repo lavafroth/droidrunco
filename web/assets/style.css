@@ -3,38 +3,75 @@
     margin: 0;
     font-family: sans-serif;
 }
+
+:root {
+    --advanced-card: #fffde7;
+    --advanced: #cddc39;
+    --advanced-desc: #f0f4c3;
+    --background: #fff;
+    --default-card: #eceff1;
+    --expert-card: #fff8e1;
+    --expert-desc: #ffecb3;
+    --expert: #ffc107;
+    --recommended: #8bc34a;
+    --recommended-card: #f1f8e9;
+    --recommended-desc: #dcedc8;
+    --text: #333;
+    --unsafe-card: #ffebee;
+    --unsafe-desc: #ffcdd2;
+    --unsafe: #ff5722;
+    --tag: #ccc;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --advanced-card: #312d00;
+        --advanced: #d1df49;
+        --advanced-desc: #383b0b;
+        --background: #181a1b;
+        --default-card: #212425;
+        --expert-card: #342800;
+        --expert-desc: #483600;
+        --expert: #ffc71e;
+        --recommended: #95c85a;
+        --recommended-card: #283411;
+        --recommended-desc: #374717;
+        --text: #fefefe;
+        --unsafe-card: #3f0009;
+        --unsafe-desc: #510008;
+        --unsafe: #ff6331;
+        --tag: #35393b;
+    }
+}
+
+
 .description,
 .label,
 .package {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
     overflow-wrap: anywhere;
 }
 body {
-    background: #fff;
+    background: var(--background);
 }
 .Recommended action svg {
-    color: #8bc34a !important;
+    color: var(--recommended) !important;
 }
 .Advanced action svg {
-    color: #cddc39 !important;
+    color: var(--advanced) !important;
 }
 .Expert action svg {
-    color: #ffc107 !important;
+    color: var(--expert) !important;
 }
 .Unsafe action svg {
-    color: #ff5722 !important;
+    color: var(--unsafe) !important;
 }
 .tag {
     margin-top: 0.5rem;
     display: inline-block;
     padding: 0.4rem;
-    background: #ccc;
-    color: #fff;
+    background: var(--tag);
+    color: var(--text);
     border-radius: 1rem;
 }
 container {
@@ -44,30 +81,26 @@ container {
     padding: 0.5rem;
     overflow-y: scroll;
     height: calc(100vh - 5.01rem);
+    color: var(--text);
 }
-container::-webkit-scrollbar {
-    display: none;
-}
-container::-moz-scrollbar {
+container::-webkit-scrollbar, container::-moz-scrollbar {
     display: none;
 }
 container .entry {
-    background: #eceff1;
     padding: 1rem;
     margin: 0.5rem;
     border-radius: 1rem;
 }
-container .entry .label {
+container .entry .label, .search {
     font-size: 1.5rem;
 }
 .search {
     text-align: center;
     width: calc(100vw - 8rem);
-    font-size: 1.5rem;
     padding: 0.5rem;
     border-radius: 1.5rem;
     outline: none;
-    background: #fff;
+    background: var(--background);
     border: 0.15rem solid #ccc;
 }
 search {
@@ -75,26 +108,26 @@ search {
     display: flex;
     justify-content: center;
 }
-container .entry .package {
+
+.collapsed, .collapsed-after, container .entry .description {
+    transition: all 0.25s ease-out;
 }
+
 .collapsed {
     height: 0;
     overflow: hidden;
     padding: 0 !important;
     opacity: 0;
-    transition: all 0.25s ease-out;
 }
 .collapsed-after {
     padding: 0 !important;
     margin: 0 !important;
-    transition: all 0.25s ease-out;
 }
 container .entry .description {
     margin: 1rem 0 0.5rem;
     padding: 1rem;
     border-radius: 1rem;
-    color: #333;
-    transition: all 0.25s ease-out;
+    color: var(--text);
 }
 container .entry svg {
     float: right;
@@ -114,29 +147,33 @@ container .entry svg {
         height: calc(100vh - 6.52rem);
     }
 }
+
+.default-card {
+    background: var(--default-card);
+}
 .Unsafe {
-    background: #ffebee !important;
+    background: var(--unsafe-card);
 }
 .Unsafe .description {
-    background: #ffcdd2;
+    background: var(--unsafe-desc);
 }
 .Expert {
-    background: #fff8e1 !important;
+    background: var(--expert-card);
 }
 .Expert .description {
-    background: #ffecb3;
+    background: var(--expert-desc);
 }
 .Advanced {
-    background: #fffde7 !important;
+    background: var(--advanced-card);
 }
 .Advanced .description {
-    background: #f0f4c3;
+    background: var(--advanced-desc);
 }
 .Recommended {
-    background: #f1f8e9 !important;
+    background: var(--recommended-card);
 }
 .Recommended .description {
-    background: #dcedc8;
+    background: var(--recommended-desc);
 }
 #snackbar {
     visibility: hidden;
@@ -150,17 +187,17 @@ container .entry svg {
     z-index: 1;
     border: 0.15rem solid #888;
 }
-
-#snackbar.success {
-    background: #f1f8e8;
+#snackbar.success, #snackbar.failure {
     visibility: visible;
     animation: fadein 3s;
 }
 
+#snackbar.success {
+    background: #f1f8e8;
+}
+
 #snackbar.failure {
-    background: #ffebee;
-    visibility: visible;
-    animation: fadein 3s;
+    background: var(--unsafe-card);
 }
 
 @keyframes fadein {
