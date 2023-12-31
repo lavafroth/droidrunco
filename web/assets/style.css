@@ -102,6 +102,7 @@ container .entry .label, .search {
     outline: none;
     background: var(--background);
     border: 0.15rem solid #ccc;
+    color: var(--text);
 }
 search {
     margin-top: 0.5rem;
