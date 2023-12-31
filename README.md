@@ -1,7 +1,7 @@
 # Droidrunco
 Your Android device. Cleaner.
 
-![desktop screenshot](screenshots/desktop.png)
+![demo screenshot](screenshots/demo.png)
 
 - [Introduction](https://github.com/lavafroth/droidrunco#Introduction)
 - [Installation](https://github.com/lavafroth/droidrunco#Installation)
