@@ -3,11 +3,13 @@ trash_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" pre
 searchBox = document.querySelector('.search');
 
 var extended = {}
+var apps = [];
 var patchWs = new WebSocket("ws://localhost:8080/patch")
 var listWs = new WebSocket("ws://localhost:8080/list")
 
 listWs.onmessage = e => {
-	displayApps(JSON.parse(e.data) || [])
+	apps = JSON.parse(e.data) || apps
+	displayApps()
 }
 
 patchWs.onmessage = e => {
@@ -18,7 +20,7 @@ patchWs.onmessage = e => {
 	setTimeout(function(){x.className = ""}, 3000);
 }
 
-function displayApps(apps) {
+function displayApps() {
 	document.querySelector('container').replaceChildren(...
 			apps.filter(
 				app => app.label.toLowerCase().includes(searchBox.value.toLowerCase()) || app.id.toLowerCase().includes(searchBox.value.toLowerCase())
