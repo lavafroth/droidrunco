@@ -48,7 +48,7 @@
     width: 2rem;
     height: 2rem;
     padding-top: 0.5rem;
-    fill: var(--text);
+    fill: #ccc;
 }
 
 .picklist-hide {
@@ -63,9 +63,11 @@
     margin: 0.4rem 0;
     gap: 0.2rem;
     position: absolute;
-    border-radius: 10px;
+    border-radius: 1.14rem;
     right: 0.5rem;
     transition: all 200ms ease-in-out;
+    background: var(--background);
+    border: 0.2rem solid #ccc;
 }
 
 .picklist .pickkey:first-of-type {
@@ -114,7 +116,7 @@
 }
 
 .pickkey.key-everything {
-    background: linear-gradient(90deg, var(--recommended-desc) 0%, var(--advanced-desc) 25%, var(--expert-desc) 50%, var(--unsafe-desc) 100%);
+    background: var(--default-card);
 }
 .pickkey.key-everything > .pickvalue:checked {
     background-image: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
