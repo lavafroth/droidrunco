@@ -20,10 +20,27 @@ patchWs.onmessage = e => {
 	setTimeout(function(){x.className = ""}, 3000);
 }
 
+document.querySelectorAll('.pickvalue').forEach(x => x.onchange = displayApps);
+
+document.querySelector("#filter").onclick = function() {
+	document.querySelector(".picklist").classList.toggle('picklist-hide');
+}
+
+function selectedFilters() {
+	const zip = (a, b) => a.filter((k, i) => b[i]);
+	let checked_values = Array.from(document.querySelector('.picklist').children).map(opt => opt.children[1].checked);
+	return zip(['Recommended','Advanced', 'Expert', 'Unsafe', ''], checked_values);
+}
+
 function displayApps() {
 	document.querySelector('container').replaceChildren(...
 			apps.filter(
-				app => app.label.toLowerCase().includes(searchBox.value.toLowerCase()) || app.id.toLowerCase().includes(searchBox.value.toLowerCase())
+				app => (
+						(
+						app.label.toLowerCase().includes(searchBox.value.toLowerCase())
+						|| app.id.toLowerCase().includes(searchBox.value.toLowerCase())
+						) && selectedFilters().includes(app.removal)
+				)
 			).sort((a, b) => {
 				if (a.label && !b.label) {
 					return false
@@ -37,12 +54,12 @@ function displayApps() {
 				return a.label < b.label
 			}).map(app => {
 				const ID = app.id.replaceAll('.', ''),
+				removal = app.removal === "" ? "default-card" : app.removal;
 				icon = app.enabled ? trash_icon : recycle_icon,
 				description = app.description.replaceAll('\n', "<br />"),
 				collapsedState = extended[ID] ? '' : 'collapsed collapsed-after',
 				tag = app.list ? `<span class="tag">${app.list}</span>`: '',
 				template = document.createElement('template'),
-				removal = app.removal === "" ? "default-card" : app.removal;
 				template.innerHTML = `
 				<div class="entry ${removal}" id="${ID}">
 					<action>${icon}</action>
