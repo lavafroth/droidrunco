@@ -1,30 +1,23 @@
 package meta
 
 import (
-	"encoding/json"
 	_ "embed"
+	"encoding/json"
 )
 
 //go:embed db.json
 var dbContents []byte
 
 type Meta struct {
-	Id     string `json:"id"`
 	Description string `json:"description"`
 	Removal     string `json:"removal"`
-	List string `json:"list"`
+	List        string `json:"list"`
 }
 
-type DB []*Meta
+type DB map[string]*Meta
 
 func (db DB) Get(id string) *Meta {
-	for _, entry := range db {
-		if entry.Id == id {
-			return entry
-
-		}
-	}
-	return nil
+	return db[id]
 }
 
 func Init() (DB, error) {

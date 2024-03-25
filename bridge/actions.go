@@ -31,7 +31,7 @@ func Refresh() {
 		App := Cache.Get(id)
 		if App == nil {
 			gotFreshPackages = true
-			App = &app.App{Meta: meta.Meta{Id: id}, Path: path, Enabled: true}
+			App = &app.App{Id: id, Meta: meta.Meta{}, Path: path, Enabled: true}
 			work <- App
 		}
 		fresh = append(fresh, App)

@@ -1,8 +1,6 @@
 module github.com/lavafroth/droidrunco
 
-go 1.19
-
-retract v1.0.2-alpha
+go 1.20
 
 require (
 	github.com/gorilla/websocket v1.5.0
