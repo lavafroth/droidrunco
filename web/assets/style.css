@@ -94,21 +94,21 @@
     background: var(--recommended);
 }
 
-.pickkey.key-advanced {
+.pickkey.key-advanced, .Advanced .description {
     background: var(--advanced-desc);
 }
 .pickkey.key-advanced > .pickvalue:checked {
     background: var(--advanced);
 }
 
-.pickkey.key-expert {
+.pickkey.key-expert, .Expert .description {
     background: var(--expert-desc);
 }
 .pickkey.key-expert > .pickvalue:checked {
     background: var(--expert);
 }
 
-.pickkey.key-unsafe {
+.pickkey.key-unsafe, .Unsafe .description {
     background: var(--unsafe-desc);
 }
 .pickkey.key-unsafe > .pickvalue:checked {
@@ -135,9 +135,12 @@
     position: relative;
     cursor: pointer;
     outline: none;
-    transition: all .2s ease-in-out;
     box-shadow: inset 0 0 .1em rgba(0,0,0,.3);
   }
+
+.pickvalue, .pickvalue:after {
+    transition: all 200ms ease-in-out;
+}
   
 .pickvalue:after{
     position: absolute;
@@ -148,7 +151,6 @@
     background: var(--text);
     transform: scale(.7);
     left: 0;
-    transition: all .2s ease-in-out;
   }
   
 .pickvalue:checked:after{
@@ -260,20 +262,11 @@ container .entry svg {
 .Unsafe {
     background: var(--unsafe-card);
 }
-.Unsafe .description {
-    background: var(--unsafe-desc);
-}
 .Expert {
     background: var(--expert-card);
 }
-.Expert .description {
-    background: var(--expert-desc);
-}
 .Advanced {
     background: var(--advanced-card);
-}
-.Advanced .description {
-    background: var(--advanced-desc);
 }
 .Recommended {
     background: var(--recommended-card);
@@ -283,14 +276,11 @@ container .entry svg {
 }
 #snackbar {
     visibility: hidden;
-    margin: 0 auto;
     color: #000;
-    left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(calc(50vw - 50%));
     border-radius: 1rem;
     padding: 1rem;
-    position: fixed;
-    z-index: 1;
+    position: absolute;
     border: 0.15rem solid #888;
 }
 #snackbar.success, #snackbar.failure {
