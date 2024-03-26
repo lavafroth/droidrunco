@@ -221,25 +221,19 @@ search {
     gap: 1rem;
 }
 
-.collapsed, .collapsed-after, container .entry .description {
-    transition: all 0.25s ease-out;
-}
-
 .collapsed {
     height: 0;
     overflow: hidden;
     padding: 0 !important;
     opacity: 0;
-}
-.collapsed-after {
-    padding: 0 !important;
-    margin: 0 !important;
+    margin-top: 0 !important;
 }
 container .entry .description {
-    margin: 1rem 0 0.5rem;
+    margin-top: .75rem;
     padding: 1rem;
     border-radius: 1rem;
     color: var(--text);
+    transition: all 200ms ease-out;
 }
 container .entry svg {
     float: right;

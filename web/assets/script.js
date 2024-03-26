@@ -57,7 +57,7 @@ function displayApps() {
 				removal = app.removal === "" ? "default-card" : app.removal;
 				icon = app.enabled ? trash_icon : recycle_icon,
 				description = app.description.replaceAll('\n', "<br />"),
-				collapsedState = extended[ID] ? '' : 'collapsed collapsed-after',
+				collapsedState = extended[ID] ? '' : 'collapsed',
 				tag = app.list ? `<span class="tag">${app.list}</span>`: '',
 				template = document.createElement('template'),
 				template.innerHTML = `
@@ -74,7 +74,7 @@ function displayApps() {
 						patchWs.send(JSON.stringify({id: app.id}))
 						return
 					}
-					document.querySelector(`#${ID} .description`).classList[extended[ID] ? 'add' : 'remove']('collapsed', 'collapsed-after');
+					document.querySelector(`#${ID} .description`).classList.toggle('collapsed');
 					extended[ID] ^= true
 				});
 				return entry
