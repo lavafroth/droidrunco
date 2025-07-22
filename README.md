@@ -103,27 +103,34 @@ adb kill-server
   - Gray: Untested
 - If an essential system app gets accidentally removed and Droidrunco is still running, click the recycle icon next to the entry to restore it
 
-## go run droidrunco
+## Debloating without a PC
 
-The best part about Droidrunco is that you can run the ARM version ([grab it from the latest release](https://github.com/lavafroth/droidrunco/releases/latest)) in [Termux](https://termux.dev/en/) and even debloat the Android 11+ devices of your friends or family.
+The best part about Droidrunco is that you can run the [ARM version](https://github.com/lavafroth/droidrunco/releases/latest) in [Termux](https://termux.dev/en/) and debloat Android 11+ devices.
 
-- Backup the data on your device before you accidentally screw up
-- [Enable Developer Options and USB debugging on your device](https://developer.android.com/studio/debug/dev-options#enable)
-- In the aforementioned Developer Options, enable wireless debugging
-- Under wireless debugging, click on pair a device, note down the given IP:PORT pair and the KEY.
+- In the Android Developer Options, enable wireless debugging
+- Under wireless debugging, click on pair a device, note the IP:PORT pair and the KEY.
 
 - Open termux and run the following:
 
-```
+```sh
 pkg in wget adb
-adb connect IP:PORT KEY
+adb pair IP:PORT KEY
 ```
 
 Where IP, PORT and KEY are the identifiers noted from the wireless debugging menu.
-Now the target device should get a notification stating that a debugger has been connected.
-Finally run the following in Termux:
 
-> Note: The version used here is 2.3.2 but you may use a higher version if available.
+- Back in the wireless debugging settings page, note the IP and PORT for _connecting_ to the device.
+Note that the PORT is usually different in this case.
+
+- Run the following in Termux:
+
+```sh
+adb connect IP:PORT
+```
+
+- The target device should get a notification stating that a debugger has been connected.
+
+- Finally run the following in Termux:
 
 ```sh
 wget https://github.com/lavafroth/droidrunco/releases/download/v2.3.2/droidrunco-arm-linux
@@ -131,14 +138,9 @@ chmod +x droidrunco-arm-linux
 ./droidrunco-arm-linux
 ```
 
-Open your browser and go to http://localhost:8080 and Droidrunco should be ready for use.
+> Note: The version used here is 2.3.2 but you may use a higher version if available.
 
-### Help wanted
-
-Evidently, there is no native way to run Droidrunco on a phone, like an app.
-Also, I am terrible at Android development. If you are an Android developer who can help me
-integrate [dadb](https://github.com/mobile-dev-inc/dadb) or [Shizuku](https://github.com/RikkaApps/Shizuku)
-into a fully fleshed app, feel free to contact me.
+- Go [here](http://localhost:8080).
 
 ## Acknowledgement
 A huge thank you to [the UAD project](https://github.com/0x192/Universal-Android-Debloater) for their application knowledge base that is used in this project.
