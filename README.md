@@ -42,24 +42,13 @@ no idea of what they're doing.
 
 ### Install ADB
 
-#### Linux
 - Debian: `sudo apt install android-sdk-platform-tools`
 - Arch: `sudo pacman -S android-tools`
 - Red Hat: `sudo yum install android-tools`
 - OpenSUSE: `sudo zypper install android-tools`
 - Termux: `pkg in android-tools`
-
-#### macOS
-Install [Homebrew](https://brew.sh/#install) and run the following in the terminal:    
-```bash
-brew install android-platform-tools
-```
-
-#### Windows
-Install [Chocolatey](https://chocolatey.org/install#install-step2) and run the following in a PowerShell window with administrator privileges:
-```powershell
-choco install adb
-```
+- Windows: `winget install Google.PlatformTools`
+- MacOS: `brew install android-platform-tools` using [Homebrew](https://brew.sh/#install)
 
 ### Install Droidrunco
 
