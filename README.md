@@ -102,7 +102,7 @@ The best part about Droidrunco is that you can run the [ARM version](https://git
 - Open termux and run the following:
 
 ```sh
-pkg in wget adb
+pkg in wget android-tools
 adb pair IP:PORT KEY
 ```
 
