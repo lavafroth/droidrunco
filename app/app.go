@@ -10,7 +10,6 @@ type App struct {
 	Id string `json:"id"`
 	meta.Meta
 	Path     string `json:"-"`
-	Label    string `json:"label"`
 	Enabled  bool   `json:"enabled"`
 	HasLabel bool   `json:"-"`
 }

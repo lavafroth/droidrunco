@@ -31,8 +31,19 @@ func Refresh() {
 		App := Cache.Get(id)
 		if App == nil {
 			gotFreshPackages = true
-			App = &app.App{Id: id, Meta: meta.Meta{}, Path: path, Enabled: true}
-			work <- App
+
+			metadata := meta.Meta{}
+
+			if metadataPtr := db.Get(id); metadataPtr != nil {
+				metadata = *metadataPtr
+			}
+
+			HasLabel := metadata.Label != ""
+
+			App = &app.App{Id: id, Meta: metadata, Path: path, Enabled: true, HasLabel: HasLabel}
+			if !HasLabel {
+				work <- App
+			}
 		}
 		fresh = append(fresh, App)
 	}

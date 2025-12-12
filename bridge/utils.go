@@ -29,10 +29,6 @@ func labelWorker() {
 
 		app.SetLabel(label)
 
-		if k := db.Get(app.Id); k != nil {
-			app.Meta = *k
-		}
-
 		if app.Description == "" {
 			app.Description = "Description not yet available."
 		}

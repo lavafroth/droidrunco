@@ -160,7 +160,7 @@
 .description,
 .label,
 .package {
-    user-select: none;
+    /* user-select: none; */
     overflow-wrap: anywhere;
 }
 body {

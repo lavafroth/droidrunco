@@ -9,6 +9,7 @@ import (
 var dbContents []byte
 
 type Meta struct {
+	Label       string `json:"label"`
 	Description string `json:"description"`
 	Removal     string `json:"removal"`
 	List        string `json:"list"`

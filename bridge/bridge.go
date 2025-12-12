@@ -46,8 +46,8 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	// avoid text file is busy error
-	time.Sleep(1)
+	// avoid `text file is busy` error
+	time.Sleep(2)
 
 	out, err = device.RunCommand(extractor)
 	if err != nil {
