@@ -1,12 +1,12 @@
 package bridge
 
 import (
+	"embed"
 	"fmt"
+	"github.com/lavafroth/droidrunco/app"
 	"log"
 	"strings"
 	"time"
-	"github.com/lavafroth/droidrunco/app"
-	"embed"
 )
 
 var work = make(chan *app.App, 8)
@@ -19,9 +19,15 @@ func labelWorker() {
 		label, err := device.RunCommand(fmt.Sprintf("%s %s", extractor, app.Path))
 		if err != nil {
 			log.Printf("Failed to retrieve package label: %q, path: %s", err, app.Path)
+			label = ""
 		}
 
-		app.SetLabel(strings.Trim(label, "\n"))
+		label = strings.Trim(label, "\n")
+		if label == "" {
+			label = "No name"
+		}
+
+		app.SetLabel(label)
 
 		if k := db.Get(app.Id); k != nil {
 			app.Meta = *k

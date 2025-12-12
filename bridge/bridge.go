@@ -3,6 +3,7 @@ package bridge
 import (
 	"log"
 	"strings"
+	"time"
 
 	"github.com/lavafroth/droidrunco/meta"
 	adb "github.com/zach-klippenstein/goadb"
@@ -44,6 +45,9 @@ func Init() {
 	if err := push(binary, extractor); err != nil {
 		log.Fatal(err)
 	}
+
+	// avoid text file is busy error
+	time.Sleep(1)
 
 	out, err = device.RunCommand(extractor)
 	if err != nil {
