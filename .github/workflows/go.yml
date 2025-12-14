@@ -18,7 +18,11 @@ jobs:
     - uses: actions/setup-go@v4
       with:
         go-version: '1.22'
-    - run: go build
+    - run: CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -o droidrunco-linux-arm -ldflags "-w -s"
+    - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o droidrunco-linux-amd64 -ldflags "-w -s"
+    - run: CGO_ENABLED=0 GOOS=windows GOARCH=arm go build -o droidrunco-windows-arm.exe -ldflags "-w -s"
+    - run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o droidrunco-windows-amd64.exe -ldflags "-w -s"
+    - run: CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o droidrunco-darwin-amd64 -ldflags "-w -s"
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.0.0
@@ -26,4 +30,4 @@ jobs:
         # Artifact name
         name: droidrunco
         # A file, directory or wildcard pattern that describes what to upload
-        path: droidrunco
+        path: droidrunco-*
