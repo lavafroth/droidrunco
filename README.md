@@ -60,7 +60,9 @@ Download a binary for your operating system from the [releases](https://github.c
 #### From source
 
 ```bash
-go install github.com/lavafroth/droidrunco@latest
+git clone https://github.com/lavafroth/droidrunco.git
+cd droidrunco
+go build
 ```
 
 #### From the AUR
