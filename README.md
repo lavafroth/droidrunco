@@ -23,22 +23,27 @@ vendor distributed spyware.
 
 ### Why?
 
-Despite the existence of projects like [the UAD project](https://github.com/0x192/Universal-Android-Debloater),
-there has recently been a lot of trouble correlating package names with an app's label.
-Manufacturers including Oppo, Xiaomi and the like use obscure package names for their spyware
-apps which make it difficult if not impossible to remove them without playing Russian roulette
-and risking a [bootloop](https://en.wikipedia.org/wiki/Bootloop).
+- Other debloat tools do not extract app labels.
+- It becomes difficult to correlate package names with labels.
+- Guessing which package to delete risks [bootloop](https://en.wikipedia.org/wiki/Bootloop).
 
-### How?
+### Solution
 
-Droidrunco solves the aforementioned issue by fetching the package names as well as app labels
-using its extractor binaries. This can help the user get better insights on whether an app is
-safe to get rid of.
+Droidrunco will
 
-With that said, a user still risks hitting a bootloop if they have absolutely
-no idea of what they're doing.
+- Fetch the app labels using the android `PackageManager` API.
+- Divide which apps are safe to remove into 5 levels of risk.
+
+Stick to the recommended removal list if you don't know what's doing.
 
 ## Installation
+
+There are some prebuilt packages
+
+- [AUR package by @robertfoster](https://aur.archlinux.org/packages/droidrunco): `yay droidrunco`
+- Nix, NixOS and macOS package maintained by me: `nix run github:lavafroth/droidrunco`
+
+If you prefer other package managers follow these steps:
 
 ### Install ADB
 
@@ -48,7 +53,6 @@ no idea of what they're doing.
 - OpenSUSE: `sudo zypper install android-tools`
 - Termux: `pkg in android-tools`
 - Windows: `winget install Google.PlatformTools`
-- MacOS: `brew install android-platform-tools` using [Homebrew](https://brew.sh/#install)
 
 ### Install Droidrunco
 
@@ -64,10 +68,6 @@ git clone https://github.com/lavafroth/droidrunco.git
 cd droidrunco
 go build
 ```
-
-#### From the AUR
-
-Archlinux users can install droidrunco from the [AUR](https://aur.archlinux.org/packages/droidrunco). Thank you robertfoster for packaging the app.
 
 ## Usage
 - Backup the data on your device before you accidentally screw up
