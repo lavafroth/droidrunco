@@ -14,7 +14,7 @@ type App struct {
 	HasLabel bool   `json:"-"`
 }
 
-type Apps []*App
+type Apps map[string]*App
 
 func (app *App) SetLabel(label string) {
 	if label == "" {
@@ -29,13 +29,4 @@ func (app *App) String() string {
 		return fmt.Sprintf("%s (%s)", app.Label, app.Id)
 	}
 	return app.Id
-}
-
-func (apps Apps) Get(id string) *App {
-	for _, app := range apps {
-		if app.Id == id {
-			return app
-		}
-	}
-	return nil
 }

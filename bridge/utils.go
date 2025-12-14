@@ -1,51 +1,25 @@
 package bridge
 
 import (
-	"embed"
+	_ "embed"
 	"fmt"
-	"github.com/lavafroth/droidrunco/app"
-	"log"
-	"strings"
+	// "github.com/lavafroth/droidrunco/app"
 	"time"
 )
 
-var work = make(chan *app.App, 8)
+// Thank you Irfan Latif
+// https://android.stackexchange.com/questions/90141/obtain-package-name-and-common-name-of-apps-via-adb
 
-//go:embed extractor/build/*
-var binaries embed.FS
+//go:embed extractor.dex
+var extractorDex []byte
 
-func labelWorker() {
-	for app := range work {
-		label, err := device.RunCommand(fmt.Sprintf("%s %s", extractor, app.Path))
-		if err != nil {
-			log.Printf("Failed to retrieve package label: %q, path: %s", err, app.Path)
-			label = ""
-		}
-
-		label = strings.Trim(label, "\n")
-		if label == "" {
-			label = "No name"
-		}
-
-		app.SetLabel(label)
-
-		if app.Description == "" {
-			app.Description = "Description not yet available."
-		}
-	}
-}
-
-func push(local, remote string) error {
-	localBytes, err := binaries.ReadFile("extractor/build/" + local)
-	if err != nil {
-		return fmt.Errorf("failed to read embedded file %s: %q", local, err)
-	}
+func push(remote string) error {
 	remoteHandle, err := device.OpenWrite(remote, 0o755, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to open handle with write permissions on file %s: %q", remote, err)
 	}
 	defer remoteHandle.Close()
-	if _, err := remoteHandle.Write(localBytes); err != nil {
+	if _, err := remoteHandle.Write(extractorDex); err != nil {
 		return fmt.Errorf("failed to copy data from local file handle to remote file: %q", err)
 	}
 	return nil
