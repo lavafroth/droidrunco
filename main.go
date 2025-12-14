@@ -15,7 +15,6 @@ import (
 func main() {
 	bridge.Init()
 	defer bridge.Close()
-	log.Print("Indexing packages")
 
 	// This first refresh is the most time consuming
 	// as it has to index all the apps on the device
@@ -28,7 +27,11 @@ func main() {
 			// all the packages previously seen.
 			bridge.Refresh()
 			if bridge.Updated || firstTimer {
-				if err := conn.WriteJSON(bridge.Cache); err != nil {
+				wjson := []*app.App{}
+				for _, v := range bridge.Cache {
+					wjson = append(wjson, v)
+				}
+				if err := conn.WriteJSON(wjson); err != nil {
 					return fmt.Errorf("Failed writing fresh package list to websocket connection: %q", err)
 				}
 				bridge.Updated = false
@@ -42,7 +45,7 @@ func main() {
 			if err := conn.ReadJSON(&App); err != nil {
 				return fmt.Errorf("Failed to read patch query websocket connection: %q", err)
 			}
-			if err := conn.WriteJSON(map[string]string{"status": bridge.Toggle(bridge.Cache.Get(App.Id))}); err != nil {
+			if err := conn.WriteJSON(map[string]string{"status": bridge.Toggle(bridge.Cache[App.Id])}); err != nil {
 				return fmt.Errorf("Failed writing current state of app to websocket connection: %q", err)
 			}
 			bridge.Updated = true

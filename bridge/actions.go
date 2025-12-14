@@ -18,7 +18,7 @@ func Refresh() {
 		log.Fatalf("failed to fetch list of packages: %q", err)
 	}
 	out = strings.Trim(out, "\n\t ")
-	var fresh app.Apps
+	var fresh app.Apps = map[string]*app.App{}
 	gotFreshPackages := false
 
 	for _, line := range strings.Split(out, "\n") {
@@ -28,8 +28,8 @@ func Refresh() {
 
 		// If we can already find the same package in the old list,
 		// we don't bother looking up its label name.
-		App := Cache.Get(id)
-		if App == nil {
+		App, ok := Cache[id]
+		if !ok {
 			gotFreshPackages = true
 
 			metadata := meta.Meta{}
@@ -41,26 +41,40 @@ func Refresh() {
 			HasLabel := metadata.Label != ""
 
 			App = &app.App{Id: id, Meta: metadata, Path: path, Enabled: true, HasLabel: HasLabel}
-			if !HasLabel {
-				work <- App
-			}
 		}
-		fresh = append(fresh, App)
+		fresh[id] = App
 	}
 
 	if !gotFreshPackages {
 		return
 	}
 
+	out, err = device.RunCommand("CLASSPATH=/data/local/tmp/extractor.dex app_process / Main")
+	if err != nil {
+		log.Fatalf("failed to fetch list of packages: %q", err)
+	}
+	out = strings.Trim(out, "\n\t ")
+	for _, line := range strings.Split(out, "\n") {
+		_, idAndLabel, _ := strings.Cut(line, " ")
+		id, label, _ := strings.Cut(idAndLabel, " ")
+
+		// If we can already find the same package in the old list,
+		// we don't bother looking up its label name.
+		App, ok := fresh[id]
+		if ok {
+			App.SetLabel(label)
+		}
+	}
+
 	Updated = gotFreshPackages
 
-	for _, app := range Cache {
+	for id, app := range Cache {
 		// The app was previously enabled
 		// but is no more in the new list.
-		if fresh.Get(app.Id) == nil {
+		if fresh[id] == nil {
 			// App has been disabled.
 			app.Enabled = false
-			fresh = append(fresh, app)
+			fresh[id] = app
 		}
 	}
 	Cache = fresh
