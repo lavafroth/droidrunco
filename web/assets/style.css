@@ -20,7 +20,6 @@
     --unsafe-card: #ffebee;
     --unsafe-desc: #ffcdd2;
     --unsafe: #ff5722;
-    --tag: #ccc;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,7 +39,6 @@
         --unsafe-card: #3f0009;
         --unsafe-desc: #510008;
         --unsafe: #ff6331;
-        --tag: #35393b;
     }
 }
 
@@ -87,32 +85,45 @@
     justify-content: center;
 }
 
+.Recommended {
+    .description { background: var(--recommended-desc); }
+    .tag { border-color: var(--recommended); }
+}
+
+.Advanced {
+    .description { background: var(--advanced-desc); }
+    .tag { border-color: var(--advanced); }
+}
+
+.Expert {
+    .description { background: var(--expert-desc); }
+    .tag { border-color: var(--expert); }
+}
+
+.Unsafe {
+    .description { background: var(--unsafe-desc); }
+    .tag { border-color: var(--unsafe); }
+}
+
+
+.pickkey.key-unsafe {
+    background: var(--unsafe-desc);
+    .pickvalue:checked { background: var(--unsafe); }
+}
+
+.pickkey.key-expert {
+    background: var(--expert-desc);
+    .pickvalue:checked { background: var(--expert); }
+}
+
+.pickkey.key-advanced {
+    background: var(--advanced-desc);
+    .pickvalue:checked { background: var(--advanced); }
+}
+
 .pickkey.key-recommended {
     background: var(--recommended-desc);
-}
-.pickkey.key-recommended > .pickvalue:checked {
-    background: var(--recommended);
-}
-
-.pickkey.key-advanced, .Advanced .description {
-    background: var(--advanced-desc);
-}
-.pickkey.key-advanced > .pickvalue:checked {
-    background: var(--advanced);
-}
-
-.pickkey.key-expert, .Expert .description {
-    background: var(--expert-desc);
-}
-.pickkey.key-expert > .pickvalue:checked {
-    background: var(--expert);
-}
-
-.pickkey.key-unsafe, .Unsafe .description {
-    background: var(--unsafe-desc);
-}
-.pickkey.key-unsafe > .pickvalue:checked {
-    background: var(--unsafe);
+    .pickvalue:checked { background: var(--recommended); }
 }
 
 .pickkey.key-everything {
@@ -182,7 +193,6 @@ body {
     margin-top: 0.5rem;
     display: inline-block;
     padding: 0.4rem;
-    background: var(--tag);
     color: var(--text);
     border-radius: 1rem;
 }
