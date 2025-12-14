@@ -9,23 +9,21 @@ import (
 type App struct {
 	Id string `json:"id"`
 	meta.Meta
-	Path     string `json:"-"`
-	Enabled  bool   `json:"enabled"`
-	HasLabel bool   `json:"-"`
+	Path    string `json:"-"`
+	Enabled bool   `json:"enabled"`
 }
 
 type Apps map[string]*App
 
 func (app *App) SetLabel(label string) {
-	if label == "" {
+	if label == "" || app.Label != "" {
 		return
 	}
 	app.Label = label
-	app.HasLabel = true
 }
 
 func (app *App) String() string {
-	if app.HasLabel {
+	if app.Label != "" {
 		return fmt.Sprintf("%s (%s)", app.Label, app.Id)
 	}
 	return app.Id

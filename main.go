@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"maps"
 	"net/http"
+	"slices"
 
 	"github.com/lavafroth/droidrunco/app"
 	"github.com/lavafroth/droidrunco/bridge"
@@ -16,27 +18,17 @@ func main() {
 	bridge.Init()
 	defer bridge.Close()
 
-	// This first refresh is the most time consuming
-	// as it has to index all the apps on the device
-	bridge.Refresh()
 	web.WsLoopHandleFunc("/list", func(conn *websocket.Conn) error {
-		firstTimer := true
 		for {
-			// These subsequent calls are cheap, both in terms
-			// of time as well as processing because we prune
-			// all the packages previously seen.
-			bridge.Refresh()
-			if bridge.Updated || firstTimer {
-				wjson := []*app.App{}
-				for _, v := range bridge.Cache {
-					wjson = append(wjson, v)
-				}
-				if err := conn.WriteJSON(wjson); err != nil {
+			gotNewPackages, err := bridge.Refresh()
+			if err != nil {
+				return err
+			}
+			if gotNewPackages {
+				if err := conn.WriteJSON(slices.Collect(maps.Keys(bridge.Cache))); err != nil {
 					return fmt.Errorf("Failed writing fresh package list to websocket connection: %q", err)
 				}
-				bridge.Updated = false
 			}
-			firstTimer = false
 		}
 	})
 	web.WsLoopHandleFunc("/patch", func(conn *websocket.Conn) error {
@@ -48,7 +40,6 @@ func main() {
 			if err := conn.WriteJSON(map[string]string{"status": bridge.Toggle(bridge.Cache[App.Id])}); err != nil {
 				return fmt.Errorf("Failed writing current state of app to websocket connection: %q", err)
 			}
-			bridge.Updated = true
 		}
 	})
 	log.Print("Visit http://localhost:8080 to access the dashboard")
