@@ -24,8 +24,9 @@ func main() {
 			if err != nil {
 				return err
 			}
+
 			if gotNewPackages {
-				if err := conn.WriteJSON(slices.Collect(maps.Keys(bridge.Cache))); err != nil {
+				if err := conn.WriteJSON(slices.Collect(maps.Values(bridge.Cache))); err != nil {
 					return fmt.Errorf("Failed writing fresh package list to websocket connection: %q", err)
 				}
 			}
