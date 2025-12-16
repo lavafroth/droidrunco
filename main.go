@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"log"
 	"maps"
@@ -26,7 +27,11 @@ func main() {
 			}
 
 			if gotNewPackages {
-				if err := conn.WriteJSON(slices.Collect(maps.Values(bridge.Cache))); err != nil {
+				sortedPackages := slices.Collect(maps.Values(bridge.Cache))
+				slices.SortFunc(sortedPackages, func(a, b *app.App) int {
+					return cmp.Compare(a.Id, b.Id)
+				})
+				if err := conn.WriteJSON(sortedPackages); err != nil {
 					return fmt.Errorf("Failed writing fresh package list to websocket connection: %q", err)
 				}
 			}
