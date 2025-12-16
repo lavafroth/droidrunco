@@ -116,7 +116,7 @@ func Toggle(App *app.App) string {
 	// in which case, we can't proceed.
 	if path == "" {
 		// We return early.
-		return fmt.Sprintf("Failed to find package path for %s: %q", App.String(), err)
+		return fmt.Sprintf("Failed to find package path for %s", App.String())
 	}
 
 	// If we have a valid path to the installer, we issue the reinstall command.
