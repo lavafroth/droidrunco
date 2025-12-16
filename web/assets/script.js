@@ -41,18 +41,7 @@ function displayApps() {
 						|| app.id.toLowerCase().includes(searchBox.value.toLowerCase())
 						) && selectedFilters().includes(app.removal)
 				)
-			).sort((a, b) => {
-				if (a.label && !b.label) {
-					return false
-				}
-				if (!a.label && b.label) {
-					return true
-				}
-				if (a.label) {
-					return a.label > b.label
-				}
-				return a.label < b.label
-			}).map(app => {
+			).map(app => {
 				const ID = app.id.replaceAll('.', ''),
 				removal = app.removal === "" ? "default-card" : app.removal;
 				icon = app.enabled ? trash_icon : recycle_icon,
