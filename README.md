@@ -34,7 +34,7 @@ Droidrunco will
 - Fetch the app labels using the android `PackageManager` API.
 - Divide which apps are safe to remove into 5 levels of risk.
 
-Stick to the recommended removal list if you don't know what's doing.
+Stick to the recommended removal list if you don't know what you are doing.
 
 ## Installation
 
