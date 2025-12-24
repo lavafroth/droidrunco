@@ -1,3 +1,14 @@
+# Archival notice
+
+Droidrunco is being superseded by [zilch](https://github.com/lavafroth/zilch) which features a native
+desktop app, ADB functionality built into a single binary and stronger guarantees of reverting an uninstalled app.
+
+Droidrunco will not receive any further updates.
+
+Thank you for trying out my software :)
+
+---
+
 # Droidrunco
 Your Android device. Cleaner.
 
